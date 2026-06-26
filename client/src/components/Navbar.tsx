@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { authClient } from "../lib/auth-client";
 
 export function Navbar() {
@@ -14,6 +14,11 @@ export function Navbar() {
     <nav className="flex items-center justify-between px-6 py-4 border-b bg-white">
       <span className="font-semibold text-gray-900">Ticket Management</span>
       <div className="flex items-center gap-4">
+        {(session?.user as any)?.role === "ADMIN" && (
+          <Link to="/users" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+            Users
+          </Link>
+        )}
         <span className="text-sm text-gray-700">
           {session?.user?.name ?? session?.user?.email}
         </span>
