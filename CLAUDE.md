@@ -46,6 +46,29 @@ bun install
 - `POST /api/tickets/[id]/reply` — sends reply via email, marks resolved
 - `POST /api/users` / `GET /api/users` / `DELETE /api/users/[id]` — admin-only agent management
 
+## Authentication
+
+Auth is implemented with **better-auth** (email/password, DB sessions via Prisma/PostgreSQL). Sign-up is disabled — only seeded users can log in.
+
+**Server (`server/src/lib/auth.ts`):**
+- `betterAuth` is configured with `prismaAdapter`, `emailAndPassword` (sign-up disabled), `BETTER_AUTH_SECRET`, `BASE_URL`, and `TRUSTED_ORIGINS` env vars.
+- All auth routes are mounted at `app.all("/api/auth/*splat", toNodeHandler(auth))` in `server/src/index.ts`.
+
+**Middleware (`server/src/middleware/requireAuth.ts`):**
+- `requireAuth` calls `auth.api.getSession` and attaches `req.user` / `req.session`.
+- Returns 401 if no valid session. Use this on all protected routes.
+
+**Client (`client/src/lib/auth-client.ts`):**
+- `authClient = createAuthClient()` — no base URL needed (Vite proxy handles `/api/auth/*`).
+- Use `authClient.useSession()` for reactive session state.
+- Use `authClient.signIn.email({ email, password })` to sign in; `authClient.signOut()` to sign out.
+
+**Required env vars (server):**
+- `BETTER_AUTH_SECRET` — random secret
+- `DATABASE_URL` — PostgreSQL connection string
+- `BASE_URL` — server origin (default: `http://localhost:8000`)
+- `TRUSTED_ORIGINS` — comma-separated client origins (default: `http://localhost:3000`)
+
 ## Documentation
 
 Use the **context7 MCP** (`mcp__context7__resolve-library-id` + `mcp__context7__query-docs`) to fetch up-to-date documentation for any library before implementing — especially Prisma, NextAuth.js, shadcn/ui, Anthropic SDK, and Vite/React.
