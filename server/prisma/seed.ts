@@ -2,9 +2,14 @@ import { hashPassword } from "@better-auth/utils/password";
 import { Role } from "@prisma/client";
 import prisma from "../src/lib/prisma";
 
-const email = process.env.SEED_ADMIN_EMAIL ?? "admin@example.com";
-const password = process.env.SEED_ADMIN_PASSWORD ?? "password123";
+const email = process.env.SEED_ADMIN_EMAIL;
+const password = process.env.SEED_ADMIN_PASSWORD;
 const roleInput = process.env.SEED_ADMIN_ROLE ?? Role.ADMIN;
+
+if (!email || !password) {
+  console.error("SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set");
+  process.exit(1);
+}
 
 if (!(roleInput in Role)) {
   console.error(`Invalid role "${roleInput}". Must be one of: ${Object.values(Role).join(", ")}`);
