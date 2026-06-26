@@ -11,7 +11,7 @@ const PORT = process.env.PORT ?? 8000;
 app.use(helmet());
 
 // better-auth handles its own body parsing, so auth routes are mounted before express.json()
-const authLimiter = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true });
+const authLimiter = rateLimit({ windowMs: 15 * 60_000, max: 20, standardHeaders: true });
 app.all("/api/auth/*splat", authLimiter, toNodeHandler(auth));
 
 app.use(express.json());
