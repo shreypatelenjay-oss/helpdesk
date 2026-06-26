@@ -18,9 +18,27 @@ export default defineConfig({
   },
 
   projects: [
+    // -----------------------------------------------------------------------
+    // 1. Auth setup — runs once before all other projects.
+    //    Logs in as admin and saves session state to e2e/.auth/admin.json.
+    // -----------------------------------------------------------------------
+    {
+      name: "setup",
+      testMatch: /setup\/auth\.setup\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+
+    // -----------------------------------------------------------------------
+    // 2. All other tests run in Chromium with NO project-level storageState.
+    //    Individual test.describe blocks that need auth load storageState via
+    //    test.use({ storageState: '...' }) directly inside the describe block.
+    //    Unauthenticated describe blocks get a bare browser automatically.
+    // -----------------------------------------------------------------------
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      dependencies: ["setup"],
+      testIgnore: /setup\/auth\.setup\.ts/,
     },
   ],
 
@@ -43,7 +61,7 @@ export default defineConfig({
       command: "bun run dev",
       cwd: path.resolve(__dirname, "client"),
       url: "http://localhost:3000",
-      reuseExistingServer: false,
+      reuseExistingServer: !process.env.CI,
       timeout: 30_000,
     },
   ],
