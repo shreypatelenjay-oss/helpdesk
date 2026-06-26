@@ -7,7 +7,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
-    rateLimit: { window: 60, max: 5 },
+    ...(process.env.NODE_ENV === "production" && { rateLimit: { window: 60, max: 5 } }),
   },
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: process.env.BASE_URL ?? "http://localhost:8000",
