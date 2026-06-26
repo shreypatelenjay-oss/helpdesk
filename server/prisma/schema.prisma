@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  role          Role     @default(AGENT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignedTickets Ticket[]  @relation("AssignedAgent")
+  sessions        Session[]
+  accounts        Account[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Ticket {
+  id          String          @id @default(cuid())
+  subject     String
+  body        String
+  senderEmail String
+  status      TicketStatus    @default(OPEN)
+  category    TicketCategory?
+  assignedTo  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  agent   User?   @relation("AssignedAgent", fields: [assignedTo], references: [id])
+  replies Reply[]
+}
+
+model Reply {
+  id       String   @id @default(cuid())
+  ticketId String
+  body     String
+  sentAt   DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum TicketStatus {
+  OPEN
+  RESOLVED
+  CLOSED
+}
+
+enum TicketCategory {
+  GENERAL_QUESTION
+  TECHNICAL_QUESTION
+  REFUND_REQUEST
+}

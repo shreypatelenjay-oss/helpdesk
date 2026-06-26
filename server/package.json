@@ -7,7 +7,10 @@
     "build": "bun build src/index.ts --outdir dist --target bun"
   },
   "dependencies": {
-    "express": "^5.2.1"
+    "@prisma/client": "5",
+    "better-auth": "^1.6.20",
+    "express": "^5.2.1",
+    "prisma": "5"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
