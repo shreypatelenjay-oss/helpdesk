@@ -69,6 +69,28 @@ Auth is implemented with **better-auth** (email/password, DB sessions via Prisma
 - `BASE_URL` — server origin (default: `http://localhost:8000`)
 - `TRUSTED_ORIGINS` — comma-separated client origins (default: `http://localhost:3000`)
 
+## Testing
+
+E2e tests use **Playwright** (configured at the monorepo root).
+
+```bash
+bun run test:e2e   # run from monorepo root
+```
+
+**Test database:** `helpdesk_test` (separate PostgreSQL DB — never touches `helpdesk`).  
+**Test env vars:** `server/.env.test`  
+**Global setup:** runs `prisma migrate deploy` + seeds `admin@test.local` before the suite.  
+**Global teardown:** runs `prisma migrate reset --force` after the suite.  
+**Artifacts:** `e2e/test-results/`, `e2e/playwright-report/`
+
+### Writing Tests
+
+Always use the **`playwright-e2e-writer` agent** to write e2e tests — never write them by hand in the main conversation. Trigger it:
+- After implementing any significant feature or UI flow
+- When the user explicitly asks for e2e tests
+
+The agent has full knowledge of the test infrastructure, seeded credentials, and Playwright best practices for this codebase.
+
 ## Documentation
 
 Use the **context7 MCP** (`mcp__context7__resolve-library-id` + `mcp__context7__query-docs`) to fetch up-to-date documentation for any library before implementing — especially Prisma, NextAuth.js, shadcn/ui, Anthropic SDK, and Vite/React.
