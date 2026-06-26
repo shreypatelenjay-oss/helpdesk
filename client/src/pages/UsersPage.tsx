@@ -11,6 +11,7 @@ import {
   CardTitle,
   CardContent,
 } from "../components/ui/card";
+import { Skeleton } from "../components/ui/skeleton";
 
 type User = {
   id: string;
@@ -138,10 +139,36 @@ export function UsersPage() {
           </Card>
         )}
 
-        {isPending && <p className="text-gray-500 text-sm">Loading…</p>}
         {error && <p className="text-destructive text-sm">{axiosError(error, "Failed to load users")}</p>}
 
-        {users && (
+        {isPending ? (
+          <Card>
+            <CardContent className="p-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-gray-500">
+                    <th className="px-4 py-3 font-medium">Name</th>
+                    <th className="px-4 py-3 font-medium">Email</th>
+                    <th className="px-4 py-3 font-medium">Role</th>
+                    <th className="px-4 py-3 font-medium">Created</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-5 w-14 rounded-full" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                      <td className="px-4 py-3 text-right"><Skeleton className="h-6 w-14 ml-auto" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        ) : users && (
           <Card>
             <CardContent className="p-0">
               <table className="w-full text-sm">
@@ -201,3 +228,4 @@ export function UsersPage() {
     </div>
   );
 }
+
