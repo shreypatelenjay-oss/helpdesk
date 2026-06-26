@@ -91,6 +91,11 @@ Always use the **`playwright-e2e-writer` agent** to write e2e tests — never wr
 
 The agent has full knowledge of the test infrastructure, seeded credentials, and Playwright best practices for this codebase.
 
+## Client conventions
+
+- **HTTP:** Use `axios` for all API calls — never `fetch`.
+- **Server state:** Use **TanStack Query** (`useQuery`, `useMutation`) for all data fetching and mutations. Use `invalidateQueries` on success to keep the cache in sync. Never manage loading/error/data state manually with `useState`.
+
 ## Documentation
 
 Use the **context7 MCP** (`mcp__context7__resolve-library-id` + `mcp__context7__query-docs`) to fetch up-to-date documentation for any library before implementing — especially Prisma, NextAuth.js, shadcn/ui, Anthropic SDK, and Vite/React.

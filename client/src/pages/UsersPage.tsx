@@ -1,4 +1,6 @@
 import { useState } from "react";
+import axios from "axios";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "../components/Navbar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -27,75 +29,38 @@ type FormState = {
 
 const INITIAL_FORM: FormState = { name: "", email: "", password: "", role: "AGENT" };
 
-function useUsers() {
-  const [users, setUsers] = useState<User[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/users");
-      if (!res.ok) throw new Error("Failed to load users");
-      setUsers(await res.json());
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { users, loading, error, fetchUsers, setUsers };
+function axiosError(e: unknown, fallback: string) {
+  return axios.isAxiosError(e) ? (e.response?.data?.error ?? e.message) : fallback;
 }
 
 export function UsersPage() {
-  const { users, loading, error, fetchUsers, setUsers } = useUsers();
+  const qc = useQueryClient();
   const [formVisible, setFormVisible] = useState(false);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Fetch on first render
-  useState(() => { fetchUsers(); });
+  const { data: users, isPending, error } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => axios.get<User[]>("/api/users").then((r) => r.data),
+  });
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setFormError(null);
-    try {
-      const res = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to create user");
-      setUsers((prev) => (prev ? [...prev, data] : [data]));
+  const createUser = useMutation({
+    mutationFn: (body: FormState) => axios.post<User>("/api/users", body).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
       setForm(INITIAL_FORM);
       setFormVisible(false);
-    } catch (e) {
-      setFormError((e as Error).message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    },
+  });
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to delete user");
-      }
-      setUsers((prev) => (prev ? prev.filter((u) => u.id !== id) : prev));
-    } catch (e) {
-      alert((e as Error).message);
-    } finally {
-      setDeletingId(null);
-    }
+  const deleteUser = useMutation({
+    mutationFn: (id: string) => axios.delete(`/api/users/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+    onError: (e) => alert(axiosError(e, "Failed to delete user")),
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    createUser.mutate(form);
   };
 
   return (
@@ -104,7 +69,7 @@ export function UsersPage() {
       <div className="max-w-4xl mx-auto p-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Users</h1>
-          <Button onClick={() => { setFormVisible((v) => !v); setFormError(null); }}>
+          <Button onClick={() => { setFormVisible((v) => !v); createUser.reset(); }}>
             {formVisible ? "Cancel" : "Add user"}
           </Button>
         </div>
@@ -160,10 +125,12 @@ export function UsersPage() {
                     </select>
                   </div>
                 </div>
-                {formError && <p className="text-sm text-destructive">{formError}</p>}
+                {createUser.isError && (
+                  <p className="text-sm text-destructive">{axiosError(createUser.error, "Failed to create user")}</p>
+                )}
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? "Creating…" : "Create user"}
+                  <Button type="submit" disabled={createUser.isPending}>
+                    {createUser.isPending ? "Creating…" : "Create user"}
                   </Button>
                 </div>
               </form>
@@ -171,8 +138,8 @@ export function UsersPage() {
           </Card>
         )}
 
-        {loading && <p className="text-gray-500 text-sm">Loading…</p>}
-        {error && <p className="text-destructive text-sm">{error}</p>}
+        {isPending && <p className="text-gray-500 text-sm">Loading…</p>}
+        {error && <p className="text-destructive text-sm">{axiosError(error, "Failed to load users")}</p>}
 
         {users && (
           <Card>
@@ -217,10 +184,10 @@ export function UsersPage() {
                         <Button
                           variant="destructive"
                           size="xs"
-                          disabled={deletingId === user.id}
-                          onClick={() => handleDelete(user.id)}
+                          disabled={deleteUser.isPending && deleteUser.variables === user.id}
+                          onClick={() => deleteUser.mutate(user.id)}
                         >
-                          {deletingId === user.id ? "Deleting…" : "Delete"}
+                          {deleteUser.isPending && deleteUser.variables === user.id ? "Deleting…" : "Delete"}
                         </Button>
                       </td>
                     </tr>
