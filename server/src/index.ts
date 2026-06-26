@@ -1,9 +1,10 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth";
 import prisma from "./lib/prisma";
+import usersRouter from "./routes/users";
 
 const app = express();
 const PORT = process.env.PORT ?? 8000;
@@ -18,6 +19,8 @@ app.all("/api/auth/*splat", ...middlewares);
 
 app.use(express.json());
 
+app.use("/api/users", usersRouter);
+
 app.get("/api/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -25,6 +28,11 @@ app.get("/api/health", async (_req, res) => {
   } catch {
     res.status(503).json({ status: "degraded", db: "disconnected" });
   }
+});
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 app.listen(PORT, () => {
