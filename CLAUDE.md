@@ -91,6 +91,23 @@ Always use the **`playwright-e2e-writer` agent** to write e2e tests — never wr
 
 The agent has full knowledge of the test infrastructure, seeded credentials, and Playwright best practices for this codebase.
 
+## Component tests
+
+Component tests use **Vitest** + **React Testing Library** + **happy-dom**, configured in `client/vite.config.mts`.
+
+```bash
+cd client && bun run test        # run all component tests once
+cd client && bun run test:watch  # watch mode
+cd client && bun run test:write  # use Claude to write tests for untested components
+```
+
+**Writing tests:**
+- Test files live next to the component: `src/pages/Foo.test.tsx`
+- Always use the `renderWithQuery` helper from `src/test/render.tsx` — it wraps the component in `QueryClientProvider` + `MemoryRouter`
+- Mock `axios` with `vi.mock("axios")` and `vi.mocked(axios, true)`
+- Mock `../components/Navbar` in page tests to keep them focused
+- Follow the patterns in `src/pages/UsersPage.test.tsx`
+
 ## Client conventions
 
 - **HTTP:** Use `axios` for all API calls — never `fetch`.
