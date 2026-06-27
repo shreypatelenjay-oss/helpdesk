@@ -16,6 +16,7 @@
         "@base-ui/react": "^1.6.0",
         "@fontsource-variable/geist": "^5.2.9",
         "@hookform/resolvers": "^5.4.0",
+        "@repo/core": "workspace:*",
         "@tanstack/react-query": "^5.101.1",
         "axios": "^1.18.1",
         "better-auth": "^1.6.21",
@@ -49,12 +50,20 @@
         "vitest": "^2.0.0",
       },
     },
+    "core": {
+      "name": "@repo/core",
+      "version": "1.0.0",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
+    },
     "server": {
       "name": "server",
       "version": "1.0.0",
       "dependencies": {
         "@better-auth/utils": "^0.4.2",
         "@prisma/client": "5",
+        "@repo/core": "workspace:*",
         "better-auth": "^1.6.20",
         "express": "^5.2.1",
         "express-rate-limit": "^8.5.2",
@@ -283,6 +292,8 @@
     "@prisma/fetch-engine": ["@prisma/fetch-engine@5.22.0", "", { "dependencies": { "@prisma/debug": "5.22.0", "@prisma/engines-version": "5.22.0-44.605197351a3c8bdd595af2d2a9bc3025bca48ea2", "@prisma/get-platform": "5.22.0" } }, "sha512-bkrD/Mc2fSvkQBV5EpoFcZ87AvOgDxbG99488a5cexp5Ccny+UM6MAe/UFkUC0wLYD9+9befNOqGiIJhhq+HbA=="],
 
     "@prisma/get-platform": ["@prisma/get-platform@5.22.0", "", { "dependencies": { "@prisma/debug": "5.22.0" } }, "sha512-pHhpQdr1UPFpt+zFfnPazhulaZYCUqeIcPpJViYoq9R+D/yw4fjE+CtnsnKzPYm0ddUbeXUzjGVGIRVgPDCk4Q=="],
+
+    "@repo/core": ["@repo/core@workspace:core"],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.27", "", {}, "sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA=="],
 

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { hashPassword } from "@better-auth/utils/password";
+import { createUserSchema, Role } from "@repo/core";
 import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/requireAuth";
 import { requireAdmin } from "../middleware/requireAdmin";
@@ -17,20 +18,18 @@ router.get("/", async (_req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { name, email, password, role } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: "email and password are required" });
+  const parsed = createUserSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
   }
-  if (role && role !== "ADMIN" && role !== "AGENT") {
-    return res.status(400).json({ error: "role must be ADMIN or AGENT" });
-  }
+  const { name, email, password, role } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return res.status(409).json({ error: "Email already in use" });
 
   const hashed = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { name: name ?? null, email, role: role ?? "AGENT" },
+    data: { name, email, role },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
   await prisma.account.create({

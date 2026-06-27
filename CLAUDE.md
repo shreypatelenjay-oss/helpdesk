@@ -54,6 +54,8 @@ Auth is implemented with **better-auth** (email/password, DB sessions via Prisma
 - `betterAuth` is configured with `prismaAdapter`, `emailAndPassword` (sign-up disabled), `BETTER_AUTH_SECRET`, `BASE_URL`, and `TRUSTED_ORIGINS` env vars.
 - All auth routes are mounted at `app.all("/api/auth/*splat", toNodeHandler(auth))` in `server/src/index.ts`.
 
+**Express version:** The server uses **Express 5**, which automatically forwards rejected promises to the error handler — never wrap route handlers in `try/catch`. The only exception is when a route needs to handle an error itself (e.g. the `/api/health` endpoint that returns a degraded status instead of a 503).
+
 **Middleware (`server/src/middleware/requireAuth.ts`):**
 - `requireAuth` calls `auth.api.getSession` and attaches `req.user` / `req.session`.
 - Returns 401 if no valid session. Use this on all protected routes.
@@ -112,6 +114,8 @@ cd client && bun run test:write  # use Claude to write tests for untested compon
 
 - **HTTP:** Use `axios` for all API calls — never `fetch`.
 - **Server state:** Use **TanStack Query** (`useQuery`, `useMutation`) for all data fetching and mutations. Use `invalidateQueries` on success to keep the cache in sync. Never manage loading/error/data state manually with `useState`.
+- **Forms:** Use **React Hook Form** + **Zod** for all forms. Define a `z.object(...)` schema, derive the type with `z.infer<typeof schema>`, and wire them together via `zodResolver` from `@hookform/resolvers/zod`. Use `register`, `handleSubmit`, and `formState.errors` — never manage form state or validation manually with `useState`.
+- **Shared types & schemas:** The `core` package (`packages/@repo/core`) is the single source of truth for domain enums (e.g. `Role`) and Zod schemas (e.g. `createUserSchema`) shared between client and server. Import from `@repo/core` in both. Never duplicate enums or validation schemas across workspaces, and never hardcode role strings like `"ADMIN"` or `"AGENT"` directly in components or routes.
 
 ## Documentation
 

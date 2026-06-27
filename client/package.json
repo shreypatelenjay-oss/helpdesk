@@ -12,6 +12,7 @@
     "test:write": "claude -p 'Write component tests for any untested components in src/pages and src/components using React Testing Library. Use the renderWithQuery helper from src/test/render.tsx, mock axios, and follow the patterns in UsersPage.test.tsx.' --allowedTools 'Read,Write,Edit,Bash'"
   },
   "dependencies": {
+    "@repo/core": "workspace:*",
     "@base-ui/react": "^1.6.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@hookform/resolvers": "^5.4.0",
