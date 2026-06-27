@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { z } from "zod";
-import { Role, createUserSchema } from "@repo/core";
+import { Role, createUserSchema, editUserSchema } from "@repo/core";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PencilIcon } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 import { CreateUserModal } from "../components/CreateUserModal";
+import { EditUserModal } from "../components/EditUserModal";
 
 type User = {
   id: string;
@@ -18,6 +20,7 @@ type User = {
 };
 
 type FormValues = z.infer<typeof createUserSchema>;
+type EditFormValues = z.infer<typeof editUserSchema>;
 
 function axiosError(e: unknown, fallback: string) {
   return axios.isAxiosError(e) ? (e.response?.data?.error ?? e.message) : fallback;
@@ -26,6 +29,7 @@ function axiosError(e: unknown, fallback: string) {
 export function UsersPage() {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<User | null>(null);
 
   const { data: users, isPending, error } = useQuery({
     queryKey: ["users"],
@@ -37,6 +41,15 @@ export function UsersPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       setModalOpen(false);
+    },
+  });
+
+  const editUser = useMutation({
+    mutationFn: (body: EditFormValues) =>
+      axios.patch<User>(`/api/users/${editTarget!.id}`, body).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      setEditTarget(null);
     },
   });
 
@@ -62,6 +75,17 @@ export function UsersPage() {
           isPending={createUser.isPending}
           error={createUser.isError ? axiosError(createUser.error, "Failed to create user") : null}
         />
+
+        {editTarget && (
+          <EditUserModal
+            open={true}
+            onOpenChange={(open) => { if (!open) { setEditTarget(null); editUser.reset(); } }}
+            onSubmit={(data) => editUser.mutate(data)}
+            isPending={editUser.isPending}
+            error={editUser.isError ? axiosError(editUser.error, "Failed to update user") : null}
+            user={editTarget}
+          />
+        )}
 
         {error && <p className="text-destructive text-sm">{axiosError(error, "Failed to load users")}</p>}
 
@@ -132,14 +156,23 @@ export function UsersPage() {
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button
-                          variant="destructive"
-                          size="xs"
-                          disabled={deleteUser.isPending && deleteUser.variables === user.id}
-                          onClick={() => deleteUser.mutate(user.id)}
-                        >
-                          {deleteUser.isPending && deleteUser.variables === user.id ? "Deleting…" : "Delete"}
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            onClick={() => { editUser.reset(); setEditTarget(user); }}
+                          >
+                            <PencilIcon className="size-3" /> Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="xs"
+                            disabled={deleteUser.isPending && deleteUser.variables === user.id}
+                            onClick={() => deleteUser.mutate(user.id)}
+                          >
+                            {deleteUser.isPending && deleteUser.variables === user.id ? "Deleting…" : "Delete"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

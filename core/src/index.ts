@@ -1,2 +1,2 @@
 export { Role } from "./role";
-export { createUserSchema } from "./schemas/user";
+export { createUserSchema, editUserSchema } from "./schemas/user";

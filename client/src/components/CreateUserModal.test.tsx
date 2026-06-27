@@ -8,8 +8,6 @@ import { renderWithQuery } from "../test/render";
 vi.mock("axios");
 vi.mocked(axios, true);
 
-const noop = () => {};
-
 function renderModal(props: Partial<Parameters<typeof CreateUserModal>[0]> = {}) {
   const defaults = {
     open: true,
@@ -47,8 +45,6 @@ describe("CreateUserModal", () => {
       renderModal({ onSubmit });
       await userEvent.click(screen.getByRole("button", { name: "Create user" }));
       expect(await screen.findAllByText(/./)).toBeTruthy();
-      // All three error paragraphs appear
-      const errors = screen.getAllByText(/./);
       // name, email, and password errors should all be present
       expect(screen.getByLabelText(/^name$/i)).toHaveAttribute("aria-invalid", "true");
       expect(screen.getByLabelText(/^email$/i)).toHaveAttribute("aria-invalid", "true");
