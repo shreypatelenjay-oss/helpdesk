@@ -42,17 +42,17 @@ export function CreateUserModal({ open, onOpenChange, onSubmit, isPending, error
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2" autoComplete="off">
           <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="Jane Doe" {...register("name")} />
+            <Input id="name" placeholder="Jane Doe" aria-invalid={!!errors.name} {...register("name")} />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="text" autoComplete="off" placeholder="jane@example.com" {...register("email")} />
+            <Input id="email" type="text" autoComplete="off" placeholder="jane@example.com" aria-invalid={!!errors.email} {...register("email")} />
             {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" autoComplete="new-password" {...register("password")} />
+            <Input id="password" type="password" autoComplete="new-password" aria-invalid={!!errors.password} {...register("password")} />
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}

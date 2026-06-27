@@ -80,15 +80,43 @@ describe("UsersPage", () => {
       expect(screen.queryByText("New user")).not.toBeInTheDocument();
     });
 
-    it("toggles open and closed with the Add user button", async () => {
+    it("opens when the Add user button is clicked", async () => {
+      renderWithQuery(<UsersPage />);
+      await waitFor(() => screen.getByText("Alice Admin"));
+
+      await userEvent.click(screen.getByRole("button", { name: "Add user" }));
+      expect(screen.getByText("New user")).toBeInTheDocument();
+    });
+
+    it("closes when the Cancel button is clicked", async () => {
+      renderWithQuery(<UsersPage />);
+      await waitFor(() => screen.getByText("Alice Admin"));
+
+      await userEvent.click(screen.getByRole("button", { name: "Add user" }));
+      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByText("New user")).not.toBeInTheDocument();
+    });
+
+    it("closes when Escape is pressed", async () => {
       renderWithQuery(<UsersPage />);
       await waitFor(() => screen.getByText("Alice Admin"));
 
       await userEvent.click(screen.getByRole("button", { name: "Add user" }));
       expect(screen.getByText("New user")).toBeInTheDocument();
 
-      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-      expect(screen.queryByText("New user")).not.toBeInTheDocument();
+      await userEvent.keyboard("{Escape}");
+      await waitFor(() => expect(screen.queryByText("New user")).not.toBeInTheDocument());
+    });
+
+    it("closes when clicking outside the dialog", async () => {
+      renderWithQuery(<UsersPage />);
+      await waitFor(() => screen.getByText("Alice Admin"));
+
+      await userEvent.click(screen.getByRole("button", { name: "Add user" }));
+      expect(screen.getByText("New user")).toBeInTheDocument();
+
+      await userEvent.click(document.body);
+      await waitFor(() => expect(screen.queryByText("New user")).not.toBeInTheDocument());
     });
 
     it("submits the form and closes it on success", async () => {
@@ -100,6 +128,7 @@ describe("UsersPage", () => {
       await waitFor(() => screen.getByText("Alice Admin"));
 
       await userEvent.click(screen.getByRole("button", { name: "Add user" }));
+      await userEvent.type(screen.getByLabelText(/name/i), "Carol");
       await userEvent.type(screen.getByLabelText(/email/i), "carol@example.com");
       await userEvent.type(screen.getByLabelText(/password/i), "secret123");
       await userEvent.click(screen.getByRole("button", { name: "Create user" }));
@@ -119,6 +148,7 @@ describe("UsersPage", () => {
       await waitFor(() => screen.getByText("Alice Admin"));
 
       await userEvent.click(screen.getByRole("button", { name: "Add user" }));
+      await userEvent.type(screen.getByLabelText(/name/i), "Alice");
       await userEvent.type(screen.getByLabelText(/email/i), "alice@example.com");
       await userEvent.type(screen.getByLabelText(/password/i), "secret123");
       await userEvent.click(screen.getByRole("button", { name: "Create user" }));
