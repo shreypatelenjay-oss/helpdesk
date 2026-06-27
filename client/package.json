@@ -12,11 +12,12 @@
     "test:write": "claude -p 'Write component tests for any untested components in src/pages and src/components using React Testing Library. Use the renderWithQuery helper from src/test/render.tsx, mock axios, and follow the patterns in UsersPage.test.tsx.' --allowedTools 'Read,Write,Edit,Bash'"
   },
   "dependencies": {
-    "@repo/core": "workspace:*",
     "@base-ui/react": "^1.6.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@hookform/resolvers": "^5.4.0",
+    "@repo/core": "workspace:*",
     "@tanstack/react-query": "^5.101.1",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "^1.18.1",
     "better-auth": "^1.6.21",
     "class-variance-authority": "^0.7.1",
