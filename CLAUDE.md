@@ -93,6 +93,8 @@ Always use the **`playwright-e2e-writer` agent** to write e2e tests — never wr
 
 The agent has full knowledge of the test infrastructure, seeded credentials, and Playwright best practices for this codebase.
 
+**API helper (`e2e/helpers/api.ts`):** For e2e tests that call the Express server directly (not via browser), use the shared helpers in `e2e/helpers/api.ts` instead of inlining `request.post(...)` calls. For example, `postWebhook(request, data, secret?)` wraps the `POST /api/inbound-email` call with the correct URL and `x-webhook-secret` header. Add new helpers to this file whenever a new API endpoint needs direct e2e coverage.
+
 ## Component tests
 
 Component tests use **Vitest** + **React Testing Library** + **happy-dom**, configured in `client/vite.config.mts`.
