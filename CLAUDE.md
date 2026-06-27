@@ -115,7 +115,7 @@ cd client && bun run test:write  # use Claude to write tests for untested compon
 - **HTTP:** Use `axios` for all API calls — never `fetch`.
 - **Server state:** Use **TanStack Query** (`useQuery`, `useMutation`) for all data fetching and mutations. Use `invalidateQueries` on success to keep the cache in sync. Never manage loading/error/data state manually with `useState`.
 - **Forms:** Use **React Hook Form** + **Zod** for all forms. Define a `z.object(...)` schema, derive the type with `z.infer<typeof schema>`, and wire them together via `zodResolver` from `@hookform/resolvers/zod`. Use `register`, `handleSubmit`, and `formState.errors` — never manage form state or validation manually with `useState`.
-- **Shared types & schemas:** The `core` package (`packages/@repo/core`) is the single source of truth for domain enums (e.g. `Role`) and Zod schemas (e.g. `createUserSchema`) shared between client and server. Import from `@repo/core` in both. Never duplicate enums or validation schemas across workspaces, and never hardcode role strings like `"ADMIN"` or `"AGENT"` directly in components or routes.
+- **Shared types & schemas:** The `core` package (`@repo/core`) is the single source of truth for domain enums (e.g. `Role`) and Zod schemas (e.g. `createUserSchema`) shared between client and server. Import from `@repo/core` in both. Never hardcode role strings like `"ADMIN"` or `"AGENT"` anywhere — always use the `Role` enum (`Role.ADMIN`, `Role.AGENT`). This applies to components, routes, middleware, and test fixtures.
 
 ## Documentation
 

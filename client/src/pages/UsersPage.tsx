@@ -3,13 +3,23 @@ import { z } from "zod";
 import { Role, createUserSchema, editUserSchema } from "@repo/core";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PencilIcon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 import { CreateUserModal } from "../components/CreateUserModal";
 import { EditUserModal } from "../components/EditUserModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
 
 type User = {
   id: string;
@@ -30,6 +40,7 @@ export function UsersPage() {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
   const { data: users, isPending, error } = useQuery({
     queryKey: ["users"],
@@ -87,6 +98,26 @@ export function UsersPage() {
           />
         )}
 
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {deleteTarget?.name ?? deleteTarget?.email}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. The user will no longer be able to sign in.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-white hover:bg-destructive/90"
+                onClick={() => { deleteUser.mutate(deleteTarget!.id); setDeleteTarget(null); }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {error && <p className="text-destructive text-sm">{axiosError(error, "Failed to load users")}</p>}
 
         {isPending ? (
@@ -99,7 +130,7 @@ export function UsersPage() {
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Role</th>
                     <th className="px-4 py-3 font-medium">Created</th>
-                    <th className="px-4 py-3" />
+                    <th className="px-4 py-3 font-medium w-20">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -109,7 +140,7 @@ export function UsersPage() {
                       <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-5 w-14 rounded-full" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
-                      <td className="px-4 py-3 text-right"><Skeleton className="h-6 w-14 ml-auto" /></td>
+                      <td className="px-4 py-3 w-20"><Skeleton className="h-6 w-14" /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -126,7 +157,7 @@ export function UsersPage() {
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Role</th>
                     <th className="px-4 py-3 font-medium">Created</th>
-                    <th className="px-4 py-3" />
+                    <th className="px-4 py-3 font-medium w-20">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -155,23 +186,28 @@ export function UsersPage() {
                       <td className="px-4 py-3 text-gray-500">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-4 py-3 w-20">
+                        <div className="flex items-center gap-1">
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="xs"
+                            aria-label="Edit user"
                             onClick={() => { editUser.reset(); setEditTarget(user); }}
                           >
-                            <PencilIcon className="size-3" /> Edit
+                            <PencilIcon className="size-3.5" />
                           </Button>
-                          <Button
-                            variant="destructive"
-                            size="xs"
-                            disabled={deleteUser.isPending && deleteUser.variables === user.id}
-                            onClick={() => deleteUser.mutate(user.id)}
-                          >
-                            {deleteUser.isPending && deleteUser.variables === user.id ? "Deleting…" : "Delete"}
-                          </Button>
+                          {user.role !== Role.ADMIN && (
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              aria-label="Delete user"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={deleteUser.isPending && deleteUser.variables === user.id}
+                              onClick={() => setDeleteTarget(user)}
+                            >
+                              <Trash2Icon className="size-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
