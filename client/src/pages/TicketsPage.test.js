@@ -1,6 +1,6 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, fireEvent } from "@testing-library/react";
 import axios from "axios";
 import { TicketsPage } from "./TicketsPage";
 import { renderWithQuery } from "../test/render";
@@ -41,7 +41,20 @@ describe("TicketsPage", () => {
     });
     describe("loaded state", () => {
         beforeEach(() => {
-            mockedAxios.get.mockResolvedValue({ data: TICKETS });
+            mockedAxios.get.mockImplementation((url) => {
+                if (url.includes("/api/users/agents")) {
+                    return Promise.resolve({ data: [{ id: "u1", name: "Alice", email: "alice@example.com" }] });
+                }
+                return Promise.resolve({
+                    data: {
+                        tickets: TICKETS,
+                        totalCount: TICKETS.length,
+                        totalPages: 1,
+                        page: 1,
+                        pageSize: 10,
+                    },
+                });
+            });
         });
         it("renders the Tickets heading", async () => {
             renderWithQuery(_jsx(TicketsPage, {}));
@@ -72,12 +85,12 @@ describe("TicketsPage", () => {
         it("shows an Open badge for OPEN tickets", async () => {
             renderWithQuery(_jsx(TicketsPage, {}));
             await waitFor(() => screen.getByText("Newest ticket"));
-            expect(screen.getByText("Open")).toBeInTheDocument();
+            expect(screen.getAllByText("Open").length).toBeGreaterThan(0);
         });
         it("shows a Resolved badge for RESOLVED tickets", async () => {
             renderWithQuery(_jsx(TicketsPage, {}));
             await waitFor(() => screen.getByText("Oldest ticket"));
-            expect(screen.getByText("Resolved")).toBeInTheDocument();
+            expect(screen.getAllByText("Resolved").length).toBeGreaterThan(0);
         });
         it("shows an em dash for tickets with no category", async () => {
             renderWithQuery(_jsx(TicketsPage, {}));
@@ -87,22 +100,150 @@ describe("TicketsPage", () => {
         it("shows a category badge for tickets with a category", async () => {
             renderWithQuery(_jsx(TicketsPage, {}));
             await waitFor(() => screen.getByText("Oldest ticket"));
-            expect(screen.getByText("Refund")).toBeInTheDocument();
+            expect(screen.getAllByText("Refund").length).toBeGreaterThan(0);
         });
         it("shows Unassigned for tickets with no agent", async () => {
             renderWithQuery(_jsx(TicketsPage, {}));
             await waitFor(() => screen.getByText("Newest ticket"));
-            expect(screen.getByText("Unassigned")).toBeInTheDocument();
+            expect(screen.getAllByText("Unassigned").length).toBeGreaterThan(0);
         });
         it("shows the agent name for assigned tickets", async () => {
             renderWithQuery(_jsx(TicketsPage, {}));
             await waitFor(() => screen.getByText("Oldest ticket"));
-            expect(screen.getByText("Alice")).toBeInTheDocument();
+            expect(screen.getAllByText("Alice").length).toBeGreaterThan(0);
         });
         it("shows empty state when there are no tickets", async () => {
-            mockedAxios.get.mockResolvedValue({ data: [] });
+            mockedAxios.get.mockImplementation((url) => {
+                if (url.includes("/api/users/agents")) {
+                    return Promise.resolve({ data: [{ id: "u1", name: "Alice", email: "alice@example.com" }] });
+                }
+                return Promise.resolve({
+                    data: {
+                        tickets: [],
+                        totalCount: 0,
+                        totalPages: 1,
+                        page: 1,
+                        pageSize: 10,
+                    },
+                });
+            });
             renderWithQuery(_jsx(TicketsPage, {}));
             await waitFor(() => expect(screen.getByText("No tickets yet.")).toBeInTheDocument());
+        });
+        it("renders filtering controls", async () => {
+            renderWithQuery(_jsx(TicketsPage, {}));
+            await waitFor(() => screen.getByText("Newest ticket"));
+            expect(screen.getByPlaceholderText("Search subject, body or sender...")).toBeInTheDocument();
+            expect(screen.getByRole("combobox", { name: "Filter by Status" })).toBeInTheDocument();
+            expect(screen.getByRole("combobox", { name: "Filter by Category" })).toBeInTheDocument();
+            expect(screen.getByRole("combobox", { name: "Filter by Assignee" })).toBeInTheDocument();
+        });
+        it("filters tickets by search query", async () => {
+            renderWithQuery(_jsx(TicketsPage, {}));
+            await waitFor(() => screen.getByText("Newest ticket"));
+            const searchInput = screen.getByPlaceholderText("Search subject, body or sender...");
+            fireEvent.change(searchInput, { target: { value: "specific issue" } });
+            await waitFor(() => {
+                expect(mockedAxios.get).toHaveBeenCalledWith("/api/tickets", expect.objectContaining({
+                    params: expect.objectContaining({ search: "specific issue" })
+                }));
+            });
+        });
+        it("filters tickets by status", async () => {
+            renderWithQuery(_jsx(TicketsPage, {}));
+            await waitFor(() => screen.getByText("Newest ticket"));
+            const statusSelect = screen.getByRole("combobox", { name: "Filter by Status" });
+            fireEvent.change(statusSelect, { target: { value: "OPEN" } });
+            await waitFor(() => {
+                expect(mockedAxios.get).toHaveBeenCalledWith("/api/tickets", expect.objectContaining({
+                    params: expect.objectContaining({ status: "OPEN" })
+                }));
+            });
+        });
+        it("displays the reset button when a filter is active and clears filters on click", async () => {
+            renderWithQuery(_jsx(TicketsPage, {}));
+            await waitFor(() => screen.getByText("Newest ticket"));
+            expect(screen.queryByRole("button", { name: /reset/i })).not.toBeInTheDocument();
+            const statusSelect = screen.getByRole("combobox", { name: "Filter by Status" });
+            fireEvent.change(statusSelect, { target: { value: "CLOSED" } });
+            const resetButton = await screen.findByRole("button", { name: /reset/i });
+            expect(resetButton).toBeInTheDocument();
+            fireEvent.click(resetButton);
+            await waitFor(() => {
+                expect(statusSelect).toHaveValue("ALL");
+                expect(screen.queryByRole("button", { name: /reset/i })).not.toBeInTheDocument();
+            });
+        });
+        it("shows filtered empty state when there are no tickets matching filters", async () => {
+            mockedAxios.get.mockImplementation((url) => {
+                if (url.includes("/api/users/agents")) {
+                    return Promise.resolve({ data: [] });
+                }
+                return Promise.resolve({
+                    data: {
+                        tickets: [],
+                        totalCount: 0,
+                        totalPages: 1,
+                        page: 1,
+                        pageSize: 10,
+                    },
+                });
+            });
+            renderWithQuery(_jsx(TicketsPage, {}));
+            const statusSelect = await screen.findByRole("combobox", { name: "Filter by Status" });
+            fireEvent.change(statusSelect, { target: { value: "CLOSED" } });
+            await waitFor(() => expect(screen.getByText("No tickets match the selected filters.")).toBeInTheDocument());
+        });
+        it("renders pagination controls and updates parameters on click", async () => {
+            mockedAxios.get.mockImplementation((url) => {
+                if (url.includes("/api/users/agents")) {
+                    return Promise.resolve({ data: [{ id: "u1", name: "Alice", email: "alice@example.com" }] });
+                }
+                return Promise.resolve({
+                    data: {
+                        tickets: TICKETS,
+                        totalCount: 15,
+                        totalPages: 2,
+                        page: 1,
+                        pageSize: 10,
+                    },
+                });
+            });
+            renderWithQuery(_jsx(TicketsPage, {}));
+            await waitFor(() => screen.getByText("Newest ticket"));
+            expect(screen.getByText(/results/i)).toHaveTextContent("Showing 1 to 10 of 15 results");
+            const nextBtn = screen.getByRole("button", { name: /Next page/i });
+            fireEvent.click(nextBtn);
+            await waitFor(() => {
+                expect(mockedAxios.get).toHaveBeenCalledWith("/api/tickets", expect.objectContaining({
+                    params: expect.objectContaining({ page: 2, pageSize: 10 })
+                }));
+            });
+        });
+        it("resets page to 1 when a filter is changed", async () => {
+            mockedAxios.get.mockImplementation((url) => {
+                if (url.includes("/api/users/agents")) {
+                    return Promise.resolve({ data: [] });
+                }
+                return Promise.resolve({
+                    data: {
+                        tickets: TICKETS,
+                        totalCount: 15,
+                        totalPages: 2,
+                        page: 2,
+                        pageSize: 10,
+                    },
+                });
+            });
+            renderWithQuery(_jsx(TicketsPage, {}));
+            await waitFor(() => screen.getByText("Newest ticket"));
+            const statusSelect = screen.getByRole("combobox", { name: "Filter by Status" });
+            fireEvent.change(statusSelect, { target: { value: "OPEN" } });
+            await waitFor(() => {
+                expect(mockedAxios.get).toHaveBeenCalledWith("/api/tickets", expect.objectContaining({
+                    params: expect.objectContaining({ page: 1, status: "OPEN" })
+                }));
+            });
         });
     });
     describe("error state", () => {

@@ -7,7 +7,21 @@ import { requireAdmin } from "../middleware/requireAdmin";
 
 const router = Router();
 
-router.use(requireAuth, requireAdmin);
+router.use(requireAuth);
+
+router.get("/agents", async (_req, res) => {
+  const agents = await prisma.user.findMany({
+    where: { deletedAt: null },
+    select: { id: true, name: true, email: true, role: true },
+    orderBy: [
+      { name: "asc" },
+      { email: "asc" },
+    ],
+  });
+  res.json(agents);
+});
+
+router.use(requireAdmin);
 
 router.get("/", async (_req, res) => {
   const users = await prisma.user.findMany({
