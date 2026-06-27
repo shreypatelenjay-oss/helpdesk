@@ -1,0 +1,135 @@
+import { vi, describe, it, expect, beforeEach } from "vitest";
+import { screen, waitFor } from "@testing-library/react";
+import axios from "axios";
+import { TicketsPage } from "./TicketsPage";
+import { renderWithQuery } from "../test/render";
+
+vi.mock("axios");
+vi.mock("../components/Navbar", () => ({ Navbar: () => <nav /> }));
+
+const mockedAxios = vi.mocked(axios, true);
+
+const TICKETS = [
+  {
+    id: "1",
+    subject: "Newest ticket",
+    senderEmail: "newest@example.com",
+    status: "OPEN",
+    category: null,
+    createdAt: "2024-02-01T00:00:00.000Z",
+    agent: null,
+  },
+  {
+    id: "2",
+    subject: "Oldest ticket",
+    senderEmail: "oldest@example.com",
+    status: "RESOLVED",
+    category: "REFUND_REQUEST",
+    createdAt: "2024-01-01T00:00:00.000Z",
+    agent: { id: "u1", name: "Alice", email: "alice@example.com" },
+  },
+];
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+describe("TicketsPage", () => {
+  describe("loading state", () => {
+    it("renders skeleton rows while fetching", () => {
+      mockedAxios.get.mockReturnValue(new Promise(() => {}));
+      renderWithQuery(<TicketsPage />);
+      expect(screen.getAllByRole("row").length).toBeGreaterThan(1);
+      expect(screen.queryByText("Newest ticket")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("loaded state", () => {
+    beforeEach(() => {
+      mockedAxios.get.mockResolvedValue({ data: TICKETS });
+    });
+
+    it("renders the Tickets heading", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => expect(screen.getByRole("heading", { name: "Tickets" })).toBeInTheDocument());
+    });
+
+    it("renders all table column headers", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => screen.getByText("Newest ticket"));
+      for (const header of ["Subject", "From", "Status", "Category", "Assigned to", "Created"]) {
+        expect(screen.getByRole("columnheader", { name: header })).toBeInTheDocument();
+      }
+    });
+
+    it("renders a row for each ticket with subject and sender email", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => expect(screen.getByText("Newest ticket")).toBeInTheDocument());
+      expect(screen.getByText("newest@example.com")).toBeInTheDocument();
+      expect(screen.getByText("Oldest ticket")).toBeInTheDocument();
+      expect(screen.getByText("oldest@example.com")).toBeInTheDocument();
+    });
+
+    it("displays tickets in the order returned by the API (newest first)", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => screen.getByText("Newest ticket"));
+      const rows = screen.getAllByRole("row");
+      // rows[0] is the header; rows[1] is the first data row
+      expect(rows[1]).toHaveTextContent("Newest ticket");
+      expect(rows[2]).toHaveTextContent("Oldest ticket");
+    });
+
+    it("shows an Open badge for OPEN tickets", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => screen.getByText("Newest ticket"));
+      expect(screen.getByText("Open")).toBeInTheDocument();
+    });
+
+    it("shows a Resolved badge for RESOLVED tickets", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => screen.getByText("Oldest ticket"));
+      expect(screen.getByText("Resolved")).toBeInTheDocument();
+    });
+
+    it("shows an em dash for tickets with no category", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => screen.getByText("Newest ticket"));
+      expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    });
+
+    it("shows a category badge for tickets with a category", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => screen.getByText("Oldest ticket"));
+      expect(screen.getByText("Refund")).toBeInTheDocument();
+    });
+
+    it("shows Unassigned for tickets with no agent", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => screen.getByText("Newest ticket"));
+      expect(screen.getByText("Unassigned")).toBeInTheDocument();
+    });
+
+    it("shows the agent name for assigned tickets", async () => {
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => screen.getByText("Oldest ticket"));
+      expect(screen.getByText("Alice")).toBeInTheDocument();
+    });
+
+    it("shows empty state when there are no tickets", async () => {
+      mockedAxios.get.mockResolvedValue({ data: [] });
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() => expect(screen.getByText("No tickets yet.")).toBeInTheDocument());
+    });
+  });
+
+  describe("error state", () => {
+    it("shows an error message when the fetch fails", async () => {
+      mockedAxios.get.mockRejectedValue(new Error("Network error"));
+      mockedAxios.isAxiosError.mockReturnValue(false);
+      renderWithQuery(<TicketsPage />);
+      await waitFor(() =>
+        expect(screen.getByText("Failed to load tickets")).toBeInTheDocument()
+      );
+    });
+  });
+});

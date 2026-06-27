@@ -87,11 +87,16 @@ bun run test:e2e   # run from monorepo root
 
 ### Writing Tests
 
-Always use the **`playwright-e2e-writer` agent** to write e2e tests — never write them by hand in the main conversation. Trigger it:
-- After implementing any significant feature or UI flow
-- When the user explicitly asks for e2e tests
+**Prefer component tests over e2e tests.** Most UI behaviour — rendering, loading/error states, conditional display, badge logic, empty states — should be covered by Vitest + React Testing Library component tests. They are faster, more focused, and easier to maintain.
 
-The agent has full knowledge of the test infrastructure, seeded credentials, and Playwright best practices for this codebase.
+**Use e2e tests only when the scenario genuinely requires a real browser + server + auth stack**, for example:
+- Authentication flows (login, logout, session persistence)
+- Route-level access control (unauthenticated redirect, role-based guards)
+- Flows that span multiple pages or require real network responses
+
+When in doubt, ask: "Can I mock axios and assert the same thing in a component test?" If yes, write a component test instead.
+
+Always use the **`playwright-e2e-writer` agent** to write e2e tests — never write them by hand in the main conversation.
 
 **API helper (`e2e/helpers/api.ts`):** For e2e tests that call the Express server directly (not via browser), use the shared helpers in `e2e/helpers/api.ts` instead of inlining `request.post(...)` calls. For example, `postWebhook(request, data, secret?)` wraps the `POST /api/inbound-email` call with the correct URL and `x-webhook-secret` header. Add new helpers to this file whenever a new API endpoint needs direct e2e coverage.
 
@@ -117,7 +122,7 @@ cd client && bun run test:write  # use Claude to write tests for untested compon
 - **HTTP:** Use `axios` for all API calls — never `fetch`.
 - **Server state:** Use **TanStack Query** (`useQuery`, `useMutation`) for all data fetching and mutations. Use `invalidateQueries` on success to keep the cache in sync. Never manage loading/error/data state manually with `useState`.
 - **Forms:** Use **React Hook Form** + **Zod** for all forms. Define a `z.object(...)` schema, derive the type with `z.infer<typeof schema>`, and wire them together via `zodResolver` from `@hookform/resolvers/zod`. Use `register`, `handleSubmit`, and `formState.errors` — never manage form state or validation manually with `useState`.
-- **Shared types & schemas:** The `core` package (`@repo/core`) is the single source of truth for domain enums (e.g. `Role`) and Zod schemas (e.g. `createUserSchema`) shared between client and server. Import from `@repo/core` in both. Never hardcode role strings like `"ADMIN"` or `"AGENT"` anywhere — always use the `Role` enum (`Role.ADMIN`, `Role.AGENT`). This applies to components, routes, middleware, and test fixtures.
+- **Shared types & schemas:** The `core` package (`@repo/core`) is the single source of truth for domain enums (e.g. `Role`), union types (e.g. `TicketStatus`), and Zod schemas (e.g. `createUserSchema`) shared between client and server. Import from `@repo/core` in both. Never hardcode role strings like `"ADMIN"` or `"AGENT"` anywhere — always use the `Role` enum (`Role.ADMIN`, `Role.AGENT`). Never inline domain union types like `"OPEN" | "RESOLVED" | "CLOSED"` — always declare them in `core` and import from `@repo/core`. This applies to components, routes, middleware, and test fixtures.
 
 ## Documentation
 

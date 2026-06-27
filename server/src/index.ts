@@ -6,6 +6,7 @@ import { auth } from "./lib/auth";
 import prisma from "./lib/prisma";
 import usersRouter from "./routes/users";
 import inboundEmailRouter from "./routes/inbound-email";
+import ticketsRouter from "./routes/tickets";
 
 if (!process.env.INBOUND_EMAIL_SECRET) {
   const msg = "INBOUND_EMAIL_SECRET is not set";
@@ -27,6 +28,7 @@ app.all("/api/auth/*splat", ...middlewares);
 app.use(express.json());
 
 app.use("/api/inbound-email", inboundEmailRouter);
+app.use("/api/tickets", ticketsRouter);
 app.use("/api/users", usersRouter);
 
 app.get("/api/health", async (_req, res) => {
