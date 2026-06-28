@@ -1,7 +1,9 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/requireAuth";
-import { Role, createReplySchema } from "@repo/core";
+import { Role, createReplySchema, polishReplySchema } from "@repo/core";
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
 
 const router = Router();
 
@@ -175,6 +177,63 @@ router.patch("/:id", async (req, res) => {
   });
 
   res.json(updatedTicket);
+});
+
+router.post("/polish-reply", async (req, res) => {
+  const parsed = polishReplySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.errors[0].message });
+  }
+
+  const agentName = (req as any).user?.name ?? "Agent";
+
+  const { text } = await generateText({
+    model: google("gemini-2.5-flash"),
+    prompt: `You are a support agent assistant. Improve the following draft reply to make it clearer, more professional, and empathetic. End the reply with a sign-off using the agent's name "${agentName}". Return only the improved reply text with no preamble, explanation, or quotation marks.\n\nDraft:\n${parsed.data.body}`,
+  });
+
+  res.json({ polished: text.trim() });
+});
+
+router.post("/:id/summarize", async (req, res) => {
+  const { id } = req.params;
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { id },
+    select: {
+      subject: true,
+      body: true,
+      senderEmail: true,
+      replies: { select: { body: true, senderType: true, sentAt: true }, orderBy: { sentAt: "asc" } },
+    },
+  });
+
+  if (!ticket) {
+    return res.status(404).json({ error: "Ticket not found" });
+  }
+
+  const conversation = ticket.replies
+    .map((r) => `[${r.senderType === "AGENT" ? "Agent" : "Customer"} at ${new Date(r.sentAt).toLocaleString()}]: ${r.body}`)
+    .join("\n\n");
+
+  const prompt = `You are a support ticket summarizer. Summarize the following support ticket and its conversation history in 2–4 concise sentences. Focus on: what the customer's issue is, what has been done so far, and the current status.
+
+Ticket subject: ${ticket.subject}
+From: ${ticket.senderEmail}
+
+Original message:
+${ticket.body}
+
+${conversation ? `Conversation:\n${conversation}` : "No replies yet."}
+
+Provide only the summary, with no preamble.`;
+
+  const { text } = await generateText({
+    model: google("gemini-2.5-flash"),
+    prompt,
+  });
+
+  res.json({ summary: text.trim() });
 });
 
 router.post("/:id/reply", async (req, res) => {

@@ -7,4 +7,4 @@ export type { TicketCategory } from "./ticket-category";
 export type { SenderType } from "./sender-type";
 export type { Reply } from "./reply";
 export type { Ticket, Agent } from "./ticket";
-export { createReplySchema } from "./schemas/reply";
+export { createReplySchema, polishReplySchema } from "./schemas/reply";

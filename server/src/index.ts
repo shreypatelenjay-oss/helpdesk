@@ -7,6 +7,7 @@ import prisma from "./lib/prisma";
 import usersRouter from "./routes/users";
 import inboundEmailRouter from "./routes/inbound-email";
 import ticketsRouter from "./routes/tickets";
+import { requireAuth } from "./middleware/requireAuth";
 
 if (!process.env.INBOUND_EMAIL_SECRET) {
   const msg = "INBOUND_EMAIL_SECRET is not set";

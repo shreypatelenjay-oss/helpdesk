@@ -11,14 +11,17 @@
     "seed": "bun run prisma/seed.ts"
   },
   "dependencies": {
-    "@repo/core": "workspace:*",
+    "@ai-sdk/google": "^4.0.2",
     "@better-auth/utils": "^0.4.2",
     "@prisma/client": "5",
+    "@repo/core": "workspace:*",
+    "ai": "^7.0.4",
     "better-auth": "^1.6.20",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
-    "prisma": "5"
+    "prisma": "5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

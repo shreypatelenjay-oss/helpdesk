@@ -44,6 +44,8 @@ bun install
 - `GET /api/tickets/:id` — ticket detail including replies
 - `PATCH /api/tickets/:id` — update status, category, assignedTo
 - `POST /api/tickets/:id/reply` — add an agent reply (sets `senderType: AGENT`)
+- `POST /api/tickets/:id/summarize` — AI-generated summary of the ticket description + conversation history (Gemini 2.5 Flash); returns `{ summary: string }`
+- `POST /api/tickets/polish-reply` — AI polish of a draft reply (Gemini 2.5 Flash); returns `{ polished: string }`
 - `GET /api/users/agents` — list active agents (for assignee dropdown)
 - `GET /api/users` / `POST /api/users` / `PATCH /api/users/:id` / `DELETE /api/users/:id` — admin-only agent management
 
@@ -128,7 +130,7 @@ cd client && bun run test:write  # use Claude to write tests for untested compon
 ## Client conventions
 
 - **HTTP:** Use `axios` for all API calls — never `fetch`.
-- **Server state:** Use **TanStack Query** (`useQuery`, `useMutation`) for all data fetching and mutations. Use `invalidateQueries` on success to keep the cache in sync. Never manage loading/error/data state manually with `useState`.
+- **Server state:** Use **TanStack Query** (`useQuery`, `useMutation`) for all data fetching and mutations. Use `invalidateQueries` on success to keep the cache in sync. Never manage loading/error/data state manually with `useState`. Exception: one-shot AI results (e.g. the ticket summary) that are not part of the server cache may be held in local `useState`.
 - **Forms:** Use **React Hook Form** + **Zod** for all forms. Define a `z.object(...)` schema, derive the type with `z.infer<typeof schema>`, and wire them together via `zodResolver` from `@hookform/resolvers/zod`. Use `register`, `handleSubmit`, and `formState.errors` — never manage form state or validation manually with `useState`.
 - **Shared types & schemas:** The `core` package (`@repo/core`) is the single source of truth for domain enums (e.g. `Role`), union types (e.g. `TicketStatus`, `SenderType`), and Zod schemas (e.g. `createUserSchema`, `createReplySchema`) shared between client and server. Import from `@repo/core` in both. Never hardcode role strings like `"ADMIN"` or `"AGENT"` anywhere — always use the `Role` enum (`Role.ADMIN`, `Role.AGENT`). Never inline domain union types like `"OPEN" | "RESOLVED" | "CLOSED"` or `"AGENT" | "CUSTOMER"` — always declare them in `core` and import from `@repo/core`. This applies to components, routes, middleware, and test fixtures.
 

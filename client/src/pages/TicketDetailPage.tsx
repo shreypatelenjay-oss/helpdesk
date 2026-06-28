@@ -1,10 +1,11 @@
+import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axios from "axios";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Send, Sparkles } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -25,6 +26,7 @@ function axiosError(e: unknown, fallback: string) {
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const [summary, setSummary] = React.useState<string | null>(null);
 
   const { data: ticket, isPending, error } = useQuery<Ticket>({
     queryKey: ["ticket", id],
@@ -36,6 +38,14 @@ export function TicketDetailPage() {
     defaultValues: { body: "" },
   });
 
+  const polishReply = useMutation({
+    mutationFn: (body: string) =>
+      axios.post<{ polished: string }>("/api/tickets/polish-reply", { body }).then((r) => r.data),
+    onSuccess: (data) => {
+      replyForm.setValue("body", data.polished);
+    },
+  });
+
   const sendReply = useMutation({
     mutationFn: (values: ReplyFormValues) =>
       axios.post<Reply>(`/api/tickets/${id}/reply`, values).then((r) => r.data),
@@ -43,6 +53,12 @@ export function TicketDetailPage() {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       replyForm.reset();
     },
+  });
+
+  const summarize = useMutation({
+    mutationFn: () =>
+      axios.post<{ summary: string }>(`/api/tickets/${id}/summarize`).then((r) => r.data),
+    onSuccess: (data) => setSummary(data.summary),
   });
 
   if (isPending) {
@@ -85,6 +101,45 @@ export function TicketDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           <div className="md:col-span-2 space-y-6">
             <TicketDetail ticket={ticket} />
+
+            {/* Summarize */}
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={() => summarize.mutate()}
+                disabled={summarize.isPending}
+                data-testid="summarize-btn"
+              >
+                {summarize.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : summary ? (
+                  <RefreshCw className="h-4 w-4" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {summary ? "Re-generate Summary" : "Summarize"}
+              </Button>
+
+              {summarize.isError && (
+                <p className="text-xs text-destructive">
+                  {axiosError(summarize.error, "Failed to generate summary")}
+                </p>
+              )}
+
+              {summary && (
+                <Card className="shadow-xs border-amber-200/80 bg-amber-50/50">
+                  <CardContent className="p-5 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-amber-500" />
+                      <h4 className="text-sm font-semibold text-amber-800">AI Summary</h4>
+                    </div>
+                    <p className="text-sm text-amber-900 leading-relaxed">{summary}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
 
             {/* Reply Thread */}
             <Card className="shadow-xs border-gray-200/80">
@@ -153,8 +208,24 @@ export function TicketDetailPage() {
                       {axiosError(sendReply.error, "Failed to send reply")}
                     </p>
                   )}
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={sendReply.isPending} className="gap-2" data-testid="reply-submit">
+                  {polishReply.isError && (
+                    <p className="text-xs text-destructive">
+                      {axiosError(polishReply.error, "Failed to polish reply")}
+                    </p>
+                  )}
+                  <div className="flex justify-between">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2"
+                      disabled={!replyForm.watch("body") || polishReply.isPending || sendReply.isPending}
+                      onClick={() => polishReply.mutate(replyForm.getValues("body"))}
+                      data-testid="reply-polish"
+                    >
+                      {polishReply.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      Polish
+                    </Button>
+                    <Button type="submit" disabled={sendReply.isPending || !replyForm.watch("body")} className="gap-2" data-testid="reply-submit">
                       {sendReply.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                       Send Reply
                     </Button>

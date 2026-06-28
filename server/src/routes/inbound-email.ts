@@ -2,6 +2,7 @@ import { Router } from "express";
 import { inboundEmailSchema } from "@repo/core";
 import prisma from "../lib/prisma";
 import { requireWebhookSecret } from "../middleware/requireWebhookSecret";
+import { classifyTicket } from "../lib/classifyTicket";
 
 const router = Router();
 
@@ -19,6 +20,8 @@ router.post("/", requireWebhookSecret, async (req, res) => {
     data: { senderEmail: from, subject, body },
     select: { id: true, subject: true, senderEmail: true, status: true, createdAt: true },
   });
+
+  classifyTicket(ticket.id, subject, body);
 
   res.status(201).json(ticket);
 });

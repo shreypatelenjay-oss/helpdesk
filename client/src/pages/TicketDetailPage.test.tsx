@@ -317,15 +317,11 @@ describe("TicketDetailPage — reply form", () => {
     expect(screen.getByTestId("reply-submit")).toBeInTheDocument();
   });
 
-  it("shows a validation error and does not POST when submitting an empty reply", async () => {
+  it("does not POST when textarea is empty (send button is disabled)", async () => {
     renderWithQuery(<TicketDetailPage />);
     await waitFor(() => screen.getByText("Test Ticket Subject"));
 
-    await userEvent.click(screen.getByTestId("reply-submit"));
-
-    await waitFor(() =>
-      expect(screen.getByText("Reply cannot be empty")).toBeInTheDocument()
-    );
+    expect(screen.getByTestId("reply-submit")).toBeDisabled();
     expect(mockedAxios.post).not.toHaveBeenCalled();
   });
 
@@ -390,5 +386,101 @@ describe("TicketDetailPage — reply form", () => {
     );
 
     resolve({ data: AGENT_REPLY });
+  });
+
+  it("disables send button when textarea is empty", async () => {
+    renderWithQuery(<TicketDetailPage />);
+    await waitFor(() => screen.getByText("Test Ticket Subject"));
+
+    expect(screen.getByTestId("reply-submit")).toBeDisabled();
+  });
+
+  it("enables send button once text is typed", async () => {
+    renderWithQuery(<TicketDetailPage />);
+    await waitFor(() => screen.getByText("Test Ticket Subject"));
+
+    await userEvent.type(screen.getByTestId("reply-input"), "Hello");
+    expect(screen.getByTestId("reply-submit")).toBeEnabled();
+  });
+});
+
+describe("TicketDetailPage — polish button", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedAxios.get.mockImplementation((url: string) => {
+      if (url.includes("/api/users/agents")) return Promise.resolve({ data: AGENTS });
+      return Promise.resolve({ data: TICKET });
+    });
+    mockedAxios.patch.mockResolvedValue({ data: TICKET });
+  });
+
+  it("renders the polish button", async () => {
+    renderWithQuery(<TicketDetailPage />);
+    await waitFor(() => screen.getByText("Test Ticket Subject"));
+    expect(screen.getByTestId("reply-polish")).toBeInTheDocument();
+  });
+
+  it("polish button is disabled when textarea is empty", async () => {
+    renderWithQuery(<TicketDetailPage />);
+    await waitFor(() => screen.getByText("Test Ticket Subject"));
+    expect(screen.getByTestId("reply-polish")).toBeDisabled();
+  });
+
+  it("polish button is enabled when textarea has text", async () => {
+    renderWithQuery(<TicketDetailPage />);
+    await waitFor(() => screen.getByText("Test Ticket Subject"));
+
+    await userEvent.type(screen.getByTestId("reply-input"), "some draft");
+    expect(screen.getByTestId("reply-polish")).toBeEnabled();
+  });
+
+  it("calls /api/tickets/polish-reply with the current body and updates textarea", async () => {
+    mockedAxios.post.mockResolvedValue({ data: { polished: "Polished reply text." } });
+
+    renderWithQuery(<TicketDetailPage />);
+    await waitFor(() => screen.getByText("Test Ticket Subject"));
+
+    await userEvent.type(screen.getByTestId("reply-input"), "some draft");
+    await userEvent.click(screen.getByTestId("reply-polish"));
+
+    await waitFor(() =>
+      expect(mockedAxios.post).toHaveBeenCalledWith("/api/tickets/polish-reply", { body: "some draft" })
+    );
+
+    await waitFor(() =>
+      expect((screen.getByTestId("reply-input") as HTMLTextAreaElement).value).toBe("Polished reply text.")
+    );
+  });
+
+  it("shows an error message when polish request fails", async () => {
+    const err: any = new Error("AI error");
+    err.response = { data: { error: "Failed to polish reply" } };
+    mockedAxios.post.mockRejectedValue(err);
+    mockedAxios.isAxiosError.mockReturnValue(true);
+
+    renderWithQuery(<TicketDetailPage />);
+    await waitFor(() => screen.getByText("Test Ticket Subject"));
+
+    await userEvent.type(screen.getByTestId("reply-input"), "some draft");
+    await userEvent.click(screen.getByTestId("reply-polish"));
+
+    await waitFor(() =>
+      expect(screen.getByText("Failed to polish reply")).toBeInTheDocument()
+    );
+  });
+
+  it("disables polish button while polish is in flight", async () => {
+    let resolve!: (v: unknown) => void;
+    mockedAxios.post.mockReturnValue(new Promise((r) => { resolve = r; }));
+
+    renderWithQuery(<TicketDetailPage />);
+    await waitFor(() => screen.getByText("Test Ticket Subject"));
+
+    await userEvent.type(screen.getByTestId("reply-input"), "some draft");
+    await userEvent.click(screen.getByTestId("reply-polish"));
+
+    await waitFor(() => expect(screen.getByTestId("reply-polish")).toBeDisabled());
+
+    resolve({ data: { polished: "done" } });
   });
 });
