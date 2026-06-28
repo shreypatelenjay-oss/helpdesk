@@ -13,13 +13,13 @@ export function Navbar() {
 
   return (
     <nav className="flex items-center justify-between px-6 py-4 border-b bg-white">
-      <Link to="/" className="font-semibold text-gray-900">Ticket Management</Link>
+      <Link to="/" className="font-semibold text-gray-900 hover:no-underline">Ticket Management</Link>
       <div className="flex items-center gap-4">
-        <Link to="/tickets" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+        <Link to="/tickets" className="text-sm text-gray-700 hover:text-gray-900 hover:no-underline transition-colors">
           Tickets
         </Link>
         {(session?.user as any)?.role === Role.ADMIN && (
-          <Link to="/users" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+          <Link to="/users" className="text-sm text-gray-700 hover:text-gray-900 hover:no-underline transition-colors">
             Users
           </Link>
         )}

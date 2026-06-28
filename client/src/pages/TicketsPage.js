@@ -1,5 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper, } from "@tanstack/react-table";
 import { useState, useEffect } from "react";
@@ -24,7 +25,10 @@ const columnHelper = createColumnHelper();
 const columns = [
     columnHelper.accessor("subject", {
         header: "Subject",
-        cell: (info) => (_jsx("span", { className: "font-medium text-gray-900 truncate block", children: info.getValue() })),
+        cell: (info) => {
+            const id = info.row.original.id;
+            return (_jsx(Link, { to: `/tickets/${id}`, className: "font-medium text-primary hover:text-primary/80 truncate block", children: info.getValue() }));
+        },
     }),
     columnHelper.accessor("senderEmail", {
         header: "From",

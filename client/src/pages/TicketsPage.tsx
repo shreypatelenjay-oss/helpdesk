@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   useReactTable,
@@ -56,9 +57,17 @@ const columnHelper = createColumnHelper<Ticket>();
 const columns = [
   columnHelper.accessor("subject", {
     header: "Subject",
-    cell: (info) => (
-      <span className="font-medium text-gray-900 truncate block">{info.getValue()}</span>
-    ),
+    cell: (info) => {
+      const id = info.row.original.id;
+      return (
+        <Link
+          to={`/tickets/${id}`}
+          className="font-medium text-primary hover:text-primary/80 truncate block"
+        >
+          {info.getValue()}
+        </Link>
+      );
+    },
   }),
   columnHelper.accessor("senderEmail", {
     header: "From",

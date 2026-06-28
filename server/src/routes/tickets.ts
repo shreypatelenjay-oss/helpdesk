@@ -87,4 +87,93 @@ router.get("/", async (req, res) => {
   });
 });
 
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  const ticket = await prisma.ticket.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      subject: true,
+      body: true,
+      senderEmail: true,
+      status: true,
+      category: true,
+      createdAt: true,
+      assignedTo: true,
+      agent: { select: { id: true, name: true, email: true } },
+      replies: { orderBy: { sentAt: "asc" } },
+    },
+  });
+
+  if (!ticket) {
+    return res.status(404).json({ error: "Ticket not found" });
+  }
+
+  res.json(ticket);
+});
+
+router.patch("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { status, category, assignedTo } = req.body;
+
+  // Validate status if provided
+  if (status && !["OPEN", "RESOLVED", "CLOSED"].includes(status)) {
+    return res.status(400).json({ error: "Invalid status value" });
+  }
+
+  let categoryVal: any = undefined;
+  if (category !== undefined) {
+    if (category === "UNASSIGNED" || category === null) {
+      categoryVal = null;
+    } else if (["GENERAL_QUESTION", "TECHNICAL_QUESTION", "REFUND_REQUEST"].includes(category)) {
+      categoryVal = category;
+    } else {
+      return res.status(400).json({ error: "Invalid category value" });
+    }
+  }
+
+  let assignedToVal: string | null | undefined = undefined;
+  if (assignedTo !== undefined) {
+    if (assignedTo === "UNASSIGNED" || assignedTo === null) {
+      assignedToVal = null;
+    } else {
+      assignedToVal = assignedTo;
+      // verify agent exists
+      const user = await prisma.user.findUnique({ where: { id: assignedTo } });
+      if (!user || user.deletedAt) {
+        return res.status(400).json({ error: "Assigned agent not found" });
+      }
+    }
+  }
+
+  // Check if ticket exists
+  const ticketExists = await prisma.ticket.findUnique({ where: { id } });
+  if (!ticketExists) {
+    return res.status(404).json({ error: "Ticket not found" });
+  }
+
+  const data: any = {};
+  if (status !== undefined) data.status = status;
+  if (categoryVal !== undefined) data.category = categoryVal;
+  if (assignedToVal !== undefined) data.assignedTo = assignedToVal;
+
+  const updatedTicket = await prisma.ticket.update({
+    where: { id },
+    data,
+    select: {
+      id: true,
+      subject: true,
+      body: true,
+      senderEmail: true,
+      status: true,
+      category: true,
+      createdAt: true,
+      assignedTo: true,
+      agent: { select: { id: true, name: true, email: true } },
+    },
+  });
+
+  res.json(updatedTicket);
+});
+
 export default router;

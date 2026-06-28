@@ -127,6 +127,9 @@
   html {
     @apply font-sans;
     }
+  a {
+    @apply text-foreground hover:underline transition-colors;
+  }
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {

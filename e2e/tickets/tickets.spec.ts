@@ -91,4 +91,51 @@ test.describe("Tickets list and filtering", () => {
     // Verify we are back to first page
     await expect(page.locator("text=Showing 1 to 10 of")).toBeVisible();
   });
+
+  test("clicking ticket subject navigates to detail page and allows updating properties", async ({ page }) => {
+    const unique = Date.now();
+    const subject = `Detail test query ${unique}`;
+    
+    // Seed one ticket
+    await postWebhook(page.request, {
+      from: `detail-sender-${unique}@test.local`,
+      subject: subject,
+      text: `Detailed issue explanation text ${unique}`,
+    });
+
+    await page.goto("/tickets");
+    await expect(page.getByRole("heading", { name: "Tickets" })).toBeVisible();
+
+    // Click the subject link
+    await page.getByRole("link", { name: subject }).click();
+
+    // Assert that URL path is /tickets/<id>
+    await expect(page).toHaveURL(/\/tickets\/c[a-z0-9]+/);
+
+    // Verify detail page elements
+    await expect(page.getByRole("heading", { name: subject })).toBeVisible();
+    await expect(page.getByText(`Detailed issue explanation text ${unique}`)).toBeVisible();
+    await expect(page.getByText(`detail-sender-${unique}@test.local`)).toBeVisible();
+
+    // Verify initial values on selects
+    const statusSelect = page.locator("#ticket-status-select");
+    await expect(statusSelect).toHaveValue("OPEN");
+
+    const categorySelect = page.locator("#ticket-category-select");
+    await expect(categorySelect).toHaveValue("UNASSIGNED");
+
+    // Change category to TECHNICAL_QUESTION
+    await categorySelect.selectOption("TECHNICAL_QUESTION");
+
+    // Click back to tickets
+    await page.getByRole("button", { name: /Back to Tickets/i }).click();
+    await expect(page).toHaveURL(/\/tickets/);
+
+    // Filter by category TECHNICAL_QUESTION
+    const categoryFilter = page.getByRole("combobox", { name: "Filter by Category" });
+    await categoryFilter.selectOption("TECHNICAL_QUESTION");
+
+    // Verify the ticket is shown under Technical filter
+    await expect(page.locator("tbody")).toContainText(subject);
+  });
 });
