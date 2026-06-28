@@ -13,6 +13,11 @@ const STATUS_STYLES = {
     RESOLVED: "bg-green-100 text-green-700",
     CLOSED: "bg-gray-100 text-gray-600",
 };
+const STATUS_LABELS = {
+    OPEN: "Open",
+    RESOLVED: "Resolved",
+    CLOSED: "Closed",
+};
 const CATEGORY_LABELS = {
     GENERAL_QUESTION: "General",
     TECHNICAL_QUESTION: "Technical",
@@ -38,7 +43,7 @@ const columns = [
         header: "Status",
         cell: (info) => {
             const status = info.getValue();
-            return (_jsx("span", { className: `inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`, children: status.charAt(0) + status.slice(1).toLowerCase() }));
+            return (_jsx("span", { className: `inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`, children: STATUS_LABELS[status] }));
         },
     }),
     columnHelper.accessor("category", {

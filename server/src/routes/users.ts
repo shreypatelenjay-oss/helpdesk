@@ -101,7 +101,10 @@ router.delete("/:id", async (req, res) => {
   if (!user || user.deletedAt) return res.status(404).json({ error: "User not found" });
   if (user.role === Role.ADMIN) return res.status(403).json({ error: "Admin users cannot be deleted" });
 
-  await prisma.user.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+  await prisma.$transaction([
+    prisma.ticket.updateMany({ where: { assignedTo: req.params.id }, data: { assignedTo: null } }),
+    prisma.user.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } }),
+  ]);
   res.status(204).send();
 });
 
