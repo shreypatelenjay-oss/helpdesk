@@ -27,24 +27,25 @@ bun install
 
 **Monorepo structure:** `client/` (React + Vite) and `server/` (Express + Bun), run independently. The Vite dev server proxies all `/api/*` requests to `http://localhost:8000`, so the client talks to the server via relative `/api` paths.
 
-**Planned stack (not yet implemented — see `implementation-plan.md`):**
-- Frontend: Next.js + Tailwind CSS + shadcn/ui (currently plain React/Vite scaffold)
-- Backend: Next.js API routes, PostgreSQL via Prisma, NextAuth.js (credentials + DB sessions)
-- AI: Claude API (Anthropic) for ticket classification and reply suggestion
-- Email: SendGrid or Postmark (inbound webhook → ticket, outbound reply)
-- Deploy: Vercel + Supabase/Neon
+**Stack:**
+- Frontend: React + Vite + Tailwind CSS + shadcn/ui
+- Backend: Express 5 + Bun + PostgreSQL via Prisma
+- Auth: better-auth (email/password, DB sessions)
+- UI components: shadcn/ui — when adding a new component, copy the pattern from `client/src/components/ui/input.tsx` (wraps base-ui primitives); `bunx shadcn@latest add` may fail in this environment
 
-**Domain model (target):**
-- **Tickets** — status: `open | resolved | closed`; category: `general question | technical question | refund request`
-- **Users** — roles: `admin` (manages agents) and `agent` (works tickets)
-- AI auto-classifies tickets on inbound email and suggests draft replies from a knowledge base
+**Domain model:**
+- **Tickets** — status: `OPEN | RESOLVED | CLOSED`; category: `GENERAL_QUESTION | TECHNICAL_QUESTION | REFUND_REQUEST`
+- **Users** — roles: `ADMIN` (manages agents) and `AGENT` (works tickets)
+- **Replies** — `senderType: AGENT | CUSTOMER`; agents reply via the UI, customer replies come from inbound email
 
-**Key planned API routes:**
-- `POST /api/inbound-email` — email webhook, creates ticket + triggers AI classification
-- `GET /api/tickets` — list with status/category filters
-- `GET /api/tickets/[id]/suggest-reply` — returns AI-generated draft
-- `POST /api/tickets/[id]/reply` — sends reply via email, marks resolved
-- `POST /api/users` / `GET /api/users` / `DELETE /api/users/[id]` — admin-only agent management
+**Implemented API routes:**
+- `POST /api/inbound-email` — email webhook, creates ticket
+- `GET /api/tickets` — list with status/category/assignee filters, sorting, pagination, search
+- `GET /api/tickets/:id` — ticket detail including replies
+- `PATCH /api/tickets/:id` — update status, category, assignedTo
+- `POST /api/tickets/:id/reply` — add an agent reply (sets `senderType: AGENT`)
+- `GET /api/users/agents` — list active agents (for assignee dropdown)
+- `GET /api/users` / `POST /api/users` / `PATCH /api/users/:id` / `DELETE /api/users/:id` — admin-only agent management
 
 ## Authentication
 
@@ -89,12 +90,19 @@ bun run test:e2e   # run from monorepo root
 
 **Prefer component tests over e2e tests.** Most UI behaviour — rendering, loading/error states, conditional display, badge logic, empty states — should be covered by Vitest + React Testing Library component tests. They are faster, more focused, and easier to maintain.
 
-**Use e2e tests only when the scenario genuinely requires a real browser + server + auth stack**, for example:
+**Use e2e tests only for scenarios that cannot be tested any other way:**
 - Authentication flows (login, logout, session persistence)
 - Route-level access control (unauthenticated redirect, role-based guards)
-- Flows that span multiple pages or require real network responses
+- Server persistence — e.g. a mutation followed by a real page reload that proves the server stored the value
+- Full round-trips where the real network response drives a UI update that mocked axios cannot faithfully reproduce
 
-When in doubt, ask: "Can I mock axios and assert the same thing in a component test?" If yes, write a component test instead.
+**Do NOT write e2e tests for:**
+- Rendering output (text, badges, labels) — use component tests
+- API calls and their payloads — mock axios in component tests
+- Form validation, loading states, error messages — component tests
+- Any behaviour that can be asserted by mocking axios in a component test
+
+When in doubt, ask: "Does this test break if I swap the real server for a mock?" If no — write a component test instead.
 
 Always use the **`playwright-e2e-writer` agent** to write e2e tests — never write them by hand in the main conversation.
 
@@ -122,7 +130,7 @@ cd client && bun run test:write  # use Claude to write tests for untested compon
 - **HTTP:** Use `axios` for all API calls — never `fetch`.
 - **Server state:** Use **TanStack Query** (`useQuery`, `useMutation`) for all data fetching and mutations. Use `invalidateQueries` on success to keep the cache in sync. Never manage loading/error/data state manually with `useState`.
 - **Forms:** Use **React Hook Form** + **Zod** for all forms. Define a `z.object(...)` schema, derive the type with `z.infer<typeof schema>`, and wire them together via `zodResolver` from `@hookform/resolvers/zod`. Use `register`, `handleSubmit`, and `formState.errors` — never manage form state or validation manually with `useState`.
-- **Shared types & schemas:** The `core` package (`@repo/core`) is the single source of truth for domain enums (e.g. `Role`), union types (e.g. `TicketStatus`), and Zod schemas (e.g. `createUserSchema`) shared between client and server. Import from `@repo/core` in both. Never hardcode role strings like `"ADMIN"` or `"AGENT"` anywhere — always use the `Role` enum (`Role.ADMIN`, `Role.AGENT`). Never inline domain union types like `"OPEN" | "RESOLVED" | "CLOSED"` — always declare them in `core` and import from `@repo/core`. This applies to components, routes, middleware, and test fixtures.
+- **Shared types & schemas:** The `core` package (`@repo/core`) is the single source of truth for domain enums (e.g. `Role`), union types (e.g. `TicketStatus`, `SenderType`), and Zod schemas (e.g. `createUserSchema`, `createReplySchema`) shared between client and server. Import from `@repo/core` in both. Never hardcode role strings like `"ADMIN"` or `"AGENT"` anywhere — always use the `Role` enum (`Role.ADMIN`, `Role.AGENT`). Never inline domain union types like `"OPEN" | "RESOLVED" | "CLOSED"` or `"AGENT" | "CUSTOMER"` — always declare them in `core` and import from `@repo/core`. This applies to components, routes, middleware, and test fixtures.
 
 ## Documentation
 

@@ -9,7 +9,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { useState, useEffect } from "react";
-import { type TicketStatus } from "@repo/core";
+import { type TicketStatus, type Ticket } from "@repo/core";
 import { Navbar } from "../components/Navbar";
 import { Card, CardContent } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
@@ -26,15 +26,6 @@ import {
   ChevronsRight,
 } from "lucide-react";
 
-type Ticket = {
-  id: string;
-  subject: string;
-  senderEmail: string;
-  status: TicketStatus;
-  category: "GENERAL_QUESTION" | "TECHNICAL_QUESTION" | "REFUND_REQUEST" | null;
-  createdAt: string;
-  agent: { id: string; name: string | null; email: string } | null;
-};
 
 const STATUS_STYLES: Record<TicketStatus, string> = {
   OPEN: "bg-blue-100 text-blue-700",

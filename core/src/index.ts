@@ -3,3 +3,8 @@ export { createUserSchema, editUserSchema } from "./schemas/user";
 export { inboundEmailSchema } from "./schemas/inbound-email";
 export type { InboundEmail } from "./schemas/inbound-email";
 export type { TicketStatus } from "./ticket-status";
+export type { TicketCategory } from "./ticket-category";
+export type { SenderType } from "./sender-type";
+export type { Reply } from "./reply";
+export type { Ticket, Agent } from "./ticket";
+export { createReplySchema } from "./schemas/reply";

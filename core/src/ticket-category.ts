@@ -1,0 +1,4 @@
+export type TicketCategory =
+  | "GENERAL_QUESTION"
+  | "TECHNICAL_QUESTION"
+  | "REFUND_REQUEST";
