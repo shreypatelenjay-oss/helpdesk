@@ -2,7 +2,8 @@ import { Router } from "express";
 import { inboundEmailSchema } from "@repo/core";
 import prisma from "../lib/prisma";
 import { requireWebhookSecret } from "../middleware/requireWebhookSecret";
-import { classifyTicket } from "../lib/classifyTicket";
+import boss from "../lib/boss";
+import { CLASSIFY_QUEUE } from "../lib/classifyTicket";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.post("/", requireWebhookSecret, async (req, res) => {
     select: { id: true, subject: true, senderEmail: true, status: true, createdAt: true },
   });
 
-  classifyTicket(ticket.id, subject, body);
+  await boss.send(CLASSIFY_QUEUE, { ticketId: ticket.id, subject, body });
 
   res.status(201).json(ticket);
 });

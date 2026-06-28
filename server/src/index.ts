@@ -8,6 +8,8 @@ import usersRouter from "./routes/users";
 import inboundEmailRouter from "./routes/inbound-email";
 import ticketsRouter from "./routes/tickets";
 import { requireAuth } from "./middleware/requireAuth";
+import boss from "./lib/boss";
+import { CLASSIFY_QUEUE, classifyTicketWorker } from "./lib/classifyTicket";
 
 if (!process.env.INBOUND_EMAIL_SECRET) {
   const msg = "INBOUND_EMAIL_SECRET is not set";
@@ -44,6 +46,12 @@ app.get("/api/health", async (_req, res) => {
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
+});
+
+boss.start().then(async () => {
+  await boss.createQueue(CLASSIFY_QUEUE);
+  await boss.work(CLASSIFY_QUEUE, classifyTicketWorker);
+  console.log("[pg-boss] worker ready");
 });
 
 app.listen(PORT, () => {
