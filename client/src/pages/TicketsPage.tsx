@@ -42,6 +42,12 @@ const STATUS_STYLES: Record<TicketStatus, string> = {
   CLOSED: "bg-gray-100 text-gray-600",
 };
 
+const STATUS_LABELS: Record<TicketStatus, string> = {
+  OPEN: "Open",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
 const CATEGORY_LABELS: Record<NonNullable<Ticket["category"]>, string> = {
   GENERAL_QUESTION: "General",
   TECHNICAL_QUESTION: "Technical",
@@ -81,7 +87,7 @@ const columns = [
         <span
           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}
         >
-          {status.charAt(0) + status.slice(1).toLowerCase()}
+          {STATUS_LABELS[status]}
         </span>
       );
     },

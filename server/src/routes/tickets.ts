@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/requireAuth";
+import { Role } from "@repo/core";
 
 const router = Router();
 
@@ -140,7 +141,7 @@ router.patch("/:id", async (req, res) => {
       assignedToVal = assignedTo;
       // verify agent exists
       const user = await prisma.user.findUnique({ where: { id: assignedTo } });
-      if (!user || user.deletedAt) {
+      if (!user || user.deletedAt || user.role !== Role.AGENT) {
         return res.status(400).json({ error: "Assigned agent not found" });
       }
     }

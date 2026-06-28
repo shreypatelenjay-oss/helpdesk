@@ -31,6 +31,12 @@ const STATUS_STYLES = {
   CLOSED: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
+const STATUS_LABELS = {
+  OPEN: "Open",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
 const CATEGORY_STYLES = {
   GENERAL_QUESTION: "bg-purple-100 text-purple-700 border-purple-200",
   TECHNICAL_QUESTION: "bg-amber-100 text-amber-700 border-amber-200",
@@ -128,7 +134,7 @@ export function TicketDetailPage() {
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${STATUS_STYLES[ticket.status]}`}
             >
-              {ticket.status.charAt(0) + ticket.status.slice(1).toLowerCase()}
+              {STATUS_LABELS[ticket.status]}
             </span>
             {ticket.category && (
               <span
