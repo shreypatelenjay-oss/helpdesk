@@ -10,6 +10,7 @@ import ticketsRouter from "./routes/tickets";
 import { requireAuth } from "./middleware/requireAuth";
 import boss from "./lib/boss";
 import { CLASSIFY_QUEUE, classifyTicketWorker } from "./lib/classifyTicket";
+import { AUTO_RESOLVE_QUEUE, autoResolveTicketWorker } from "./lib/autoResolveTicket";
 
 if (!process.env.INBOUND_EMAIL_SECRET) {
   const msg = "INBOUND_EMAIL_SECRET is not set";
@@ -51,7 +52,9 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 boss.start().then(async () => {
   await boss.createQueue(CLASSIFY_QUEUE);
   await boss.work(CLASSIFY_QUEUE, classifyTicketWorker);
-  console.log("[pg-boss] worker ready");
+  await boss.createQueue(AUTO_RESOLVE_QUEUE);
+  await boss.work(AUTO_RESOLVE_QUEUE, autoResolveTicketWorker);
+  console.log("[pg-boss] workers ready");
 });
 
 app.listen(PORT, () => {

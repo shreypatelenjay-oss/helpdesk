@@ -32,7 +32,9 @@ router.get("/", async (req, res) => {
   const pageNum = Math.max(1, parseInt(page || "") || 1);
   const pageSizeNum = Math.max(1, parseInt(pageSize || "") || 10);
 
-  const where: any = {};
+  const where: any = {
+    status: { notIn: ["NEW", "PROCESSING"] },
+  };
 
   if (status && ["OPEN", "RESOLVED", "CLOSED"].includes(status)) {
     where.status = status;

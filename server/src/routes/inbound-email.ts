@@ -4,6 +4,7 @@ import prisma from "../lib/prisma";
 import { requireWebhookSecret } from "../middleware/requireWebhookSecret";
 import boss from "../lib/boss";
 import { CLASSIFY_QUEUE } from "../lib/classifyTicket";
+import { AUTO_RESOLVE_QUEUE } from "../lib/autoResolveTicket";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.post("/", requireWebhookSecret, async (req, res) => {
   });
 
   await boss.send(CLASSIFY_QUEUE, { ticketId: ticket.id, subject, body });
+  await boss.send(AUTO_RESOLVE_QUEUE, { ticketId: ticket.id, subject, body });
 
   res.status(201).json(ticket);
 });
