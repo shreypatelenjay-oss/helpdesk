@@ -12,6 +12,7 @@ import { Textarea } from "../components/ui/textarea";
 import { TicketDetail } from "../components/TicketDetail";
 import { TicketDetailSkeleton } from "../components/TicketDetailSkeleton";
 import { UpdateTicket } from "../components/UpdateTicket";
+import DOMPurify from "dompurify";
 import { createReplySchema, type Ticket, type Reply } from "@repo/core";
 
 type ReplyFormValues = z.infer<typeof createReplySchema>;
@@ -108,7 +109,14 @@ export function TicketDetailPage() {
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap">{reply.body}</p>
+                          {reply.bodyHTML ? (
+                            <div
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.bodyHTML) }}
+                            />
+                          ) : (
+                            <p className="whitespace-pre-wrap">{DOMPurify.sanitize(reply.body, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}</p>
+                          )}
                           <p
                             className={`mt-1.5 text-xs ${
                               reply.senderType === "AGENT" ? "text-primary-foreground/70" : "text-gray-400"
@@ -132,6 +140,7 @@ export function TicketDetailPage() {
                     {...replyForm.register("body")}
                     placeholder="Write a reply…"
                     rows={3}
+                    maxLength={5000}
                     aria-invalid={!!replyForm.formState.errors.body}
                     disabled={sendReply.isPending}
                     data-testid="reply-input"

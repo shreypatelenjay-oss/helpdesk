@@ -1,7 +1,7 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/requireAuth";
-import { Role } from "@repo/core";
+import { Role, createReplySchema } from "@repo/core";
 
 const router = Router();
 
@@ -102,7 +102,7 @@ router.get("/:id", async (req, res) => {
       createdAt: true,
       assignedTo: true,
       agent: { select: { id: true, name: true, email: true } },
-      replies: { orderBy: { sentAt: "asc" } },
+      replies: { select: { id: true, body: true, bodyHTML: true, senderType: true, sentAt: true }, orderBy: { sentAt: "asc" } },
     },
   });
 
@@ -175,6 +175,27 @@ router.patch("/:id", async (req, res) => {
   });
 
   res.json(updatedTicket);
+});
+
+router.post("/:id/reply", async (req, res) => {
+  const { id } = req.params;
+
+  const parsed = createReplySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.errors[0].message });
+  }
+
+  const ticket = await prisma.ticket.findUnique({ where: { id } });
+  if (!ticket) {
+    return res.status(404).json({ error: "Ticket not found" });
+  }
+
+  const reply = await prisma.reply.create({
+    data: { ticketId: id, body: parsed.data.body, bodyHTML: parsed.data.bodyHTML ?? null, senderType: "AGENT" },
+    select: { id: true, body: true, bodyHTML: true, senderType: true, sentAt: true },
+  });
+
+  res.status(201).json(reply);
 });
 
 export default router;

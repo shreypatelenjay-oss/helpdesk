@@ -86,12 +86,19 @@ model Ticket {
 }
 
 model Reply {
-  id       String   @id @default(cuid())
-  ticketId String
-  body     String
-  sentAt   DateTime @default(now())
+  id         String     @id @default(cuid())
+  ticketId   String
+  body       String
+  bodyHTML   String?
+  senderType SenderType @default(AGENT)
+  sentAt     DateTime   @default(now())
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+enum SenderType {
+  AGENT
+  CUSTOMER
 }
 
 enum Role {
