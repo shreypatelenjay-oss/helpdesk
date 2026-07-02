@@ -18,7 +18,7 @@ export async function classifyTicketWorker([job]: Job<ClassifyTicketJob>[]) {
   const { ticketId, subject, body } = job.data;
 
   const { text } = await generateText({
-    model: google("gemini-2.5-flash"),
+    model: google("gemini-2.5-flash-lite"),
     prompt: `Classify this support ticket into exactly one of these categories: GENERAL_QUESTION, TECHNICAL_QUESTION, REFUND_REQUEST.
 
 Subject: ${subject}

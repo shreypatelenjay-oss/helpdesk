@@ -77,9 +77,11 @@ model Ticket {
   senderEmail String
   status      TicketStatus    @default(NEW)
   category    TicketCategory?
-  assignedTo  String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  assignedTo   String?
+  resolvedByAI Boolean        @default(false)
+  resolvedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   agent   User?   @relation("AssignedAgent", fields: [assignedTo], references: [id])
   replies Reply[]

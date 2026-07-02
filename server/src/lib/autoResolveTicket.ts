@@ -3,6 +3,7 @@ import { generateText } from "ai";
 import { readFileSync } from "fs";
 import { join } from "path";
 import type { Job } from "pg-boss";
+import { getAIAgent } from "./aiAgent";
 import prisma from "./prisma";
 
 export const AUTO_RESOLVE_QUEUE = "auto-resolve-ticket";
@@ -27,9 +28,11 @@ function firstNameFromEmail(email: string): string {
 export async function autoResolveTicketWorker([job]: Job<AutoResolveTicketJob>[]) {
   const { ticketId, subject, body } = job.data;
 
+  const aiAgent = await getAIAgent();
+
   const ticket = await prisma.ticket.update({
     where: { id: ticketId },
-    data: { status: "PROCESSING" },
+    data: { status: "PROCESSING", assignedTo: aiAgent.id },
     select: { senderEmail: true },
   });
 
@@ -38,7 +41,7 @@ export async function autoResolveTicketWorker([job]: Job<AutoResolveTicketJob>[]
   let text: string;
   try {
     ({ text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-2.5-flash-lite"),
       prompt: `You are a professional support agent for an online learning platform called Code with Mosh. Use the knowledge base below to determine if you can fully resolve this customer support ticket.
 
 KNOWLEDGE BASE:
@@ -63,7 +66,7 @@ Reply writing rules (apply only when canResolve is true):
     }));
   } catch (err) {
     console.error(`[autoResolveTicket] generateText failed for ticket ${ticketId}:`, err);
-    await prisma.ticket.update({ where: { id: ticketId }, data: { status: "OPEN" } });
+    await prisma.ticket.update({ where: { id: ticketId }, data: { status: "OPEN", assignedTo: null } });
     return;
   }
 
@@ -72,12 +75,12 @@ Reply writing rules (apply only when canResolve is true):
     parsed = JSON.parse(text.trim());
   } catch {
     console.warn(`[autoResolveTicket] failed to parse AI response for ticket ${ticketId}:`, text);
-    await prisma.ticket.update({ where: { id: ticketId }, data: { status: "OPEN" } });
+    await prisma.ticket.update({ where: { id: ticketId }, data: { status: "OPEN", assignedTo: null } });
     return;
   }
 
   if (!parsed.canResolve) {
-    await prisma.ticket.update({ where: { id: ticketId }, data: { status: "OPEN" } });
+    await prisma.ticket.update({ where: { id: ticketId }, data: { status: "OPEN", assignedTo: null } });
     return;
   }
 
@@ -85,6 +88,9 @@ Reply writing rules (apply only when canResolve is true):
     prisma.reply.create({
       data: { ticketId, body: parsed.reply, senderType: "AGENT" },
     }),
-    prisma.ticket.update({ where: { id: ticketId }, data: { status: "RESOLVED" } }),
+    prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status: "RESOLVED", resolvedByAI: true, resolvedAt: new Date() },
+    }),
   ]);
 }

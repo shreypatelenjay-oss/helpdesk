@@ -7,10 +7,12 @@ import prisma from "./lib/prisma";
 import usersRouter from "./routes/users";
 import inboundEmailRouter from "./routes/inbound-email";
 import ticketsRouter from "./routes/tickets";
+import statsRouter from "./routes/stats";
 import { requireAuth } from "./middleware/requireAuth";
 import boss from "./lib/boss";
 import { CLASSIFY_QUEUE, classifyTicketWorker } from "./lib/classifyTicket";
 import { AUTO_RESOLVE_QUEUE, autoResolveTicketWorker } from "./lib/autoResolveTicket";
+import { IMAP_POLL_QUEUE, imapPollWorker } from "./lib/imapPoll";
 
 if (!process.env.INBOUND_EMAIL_SECRET) {
   const msg = "INBOUND_EMAIL_SECRET is not set";
@@ -34,6 +36,7 @@ app.use(express.json());
 app.use("/api/inbound-email", inboundEmailRouter);
 app.use("/api/tickets", ticketsRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/stats", requireAuth, statsRouter);
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -54,6 +57,9 @@ boss.start().then(async () => {
   await boss.work(CLASSIFY_QUEUE, classifyTicketWorker);
   await boss.createQueue(AUTO_RESOLVE_QUEUE);
   await boss.work(AUTO_RESOLVE_QUEUE, autoResolveTicketWorker);
+  await boss.createQueue(IMAP_POLL_QUEUE);
+  await boss.work(IMAP_POLL_QUEUE, imapPollWorker);
+  await boss.schedule(IMAP_POLL_QUEUE, "*/2 * * * *", {});
   console.log("[pg-boss] workers ready");
 });
 

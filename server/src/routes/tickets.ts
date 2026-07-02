@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/requireAuth";
 import { Role, createReplySchema, polishReplySchema } from "@repo/core";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { sendReplyEmail } from "../lib/mailer";
 
 const router = Router();
 
@@ -190,7 +191,7 @@ router.post("/polish-reply", async (req, res) => {
   const agentName = (req as any).user?.name ?? "Agent";
 
   const { text } = await generateText({
-    model: google("gemini-2.5-flash"),
+    model: google("gemini-2.5-flash-lite"),
     prompt: `You are a support agent assistant. Improve the following draft reply to make it clearer, more professional, and empathetic. End the reply with a sign-off using the agent's name "${agentName}". Return only the improved reply text with no preamble, explanation, or quotation marks.\n\nDraft:\n${parsed.data.body}`,
   });
 
@@ -231,7 +232,7 @@ ${conversation ? `Conversation:\n${conversation}` : "No replies yet."}
 Provide only the summary, with no preamble.`;
 
   const { text } = await generateText({
-    model: google("gemini-2.5-flash"),
+    model: google("gemini-2.5-flash-lite"),
     prompt,
   });
 
@@ -254,6 +255,13 @@ router.post("/:id/reply", async (req, res) => {
   const reply = await prisma.reply.create({
     data: { ticketId: id, body: parsed.data.body, bodyHTML: parsed.data.bodyHTML ?? null, senderType: "AGENT" },
     select: { id: true, body: true, bodyHTML: true, senderType: true, sentAt: true },
+  });
+
+  await sendReplyEmail({
+    to: ticket.senderEmail,
+    subject: ticket.subject,
+    text: parsed.data.body,
+    html: parsed.data.bodyHTML ?? undefined,
   });
 
   res.status(201).json(reply);

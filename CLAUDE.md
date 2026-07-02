@@ -73,6 +73,8 @@ Auth is implemented with **better-auth** (email/password, DB sessions via Prisma
 - `DATABASE_URL` — PostgreSQL connection string
 - `BASE_URL` — server origin (default: `http://localhost:8000`)
 - `TRUSTED_ORIGINS` — comma-separated client origins (default: `http://localhost:3000`)
+- `GMAIL_USER` — Gmail address used to send outbound reply emails (see `server/src/lib/mailer.ts`)
+- `GMAIL_APP_PASSWORD` — Gmail App Password for `GMAIL_USER` (requires 2FA on the Google account; not the account's normal login password). Used for both outbound SMTP sending (`server/src/lib/mailer.ts`) and inbound IMAP polling (`server/src/lib/imapPoll.ts`) — requires IMAP enabled on the Gmail account (Gmail Settings → "Forwarding and POP/IMAP" → Enable IMAP)
 
 ## Testing
 
