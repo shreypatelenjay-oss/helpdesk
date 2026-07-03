@@ -21,10 +21,4 @@ export const auth = betterAuth({
       role: { type: "string", required: false, input: false },
     },
   },
-  // SameSite=None + Secure lets the session cookie work when the client and server are on
-  // different origins (e.g. client on Vercel, server on Railway/Vercel) — required cross-site,
-  // and harmless same-origin. Guarded to production since Secure cookies need HTTPS.
-  ...(process.env.NODE_ENV === "production" && {
-    advanced: { defaultCookieAttributes: { sameSite: "none", secure: true } },
-  }),
 });

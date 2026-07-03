@@ -1,6 +1,0 @@
-{
-  "installCommand": "cd .. && bun install",
-  "crons": [
-    { "path": "/api/cron/drain-jobs", "schedule": "*/5 * * * *" }
-  ]
-}

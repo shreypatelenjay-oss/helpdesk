@@ -1,8 +1,0 @@
-{
-  "installCommand": "cd .. && bun install",
-  "buildCommand": "cd .. && bun run --filter client build",
-  "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}

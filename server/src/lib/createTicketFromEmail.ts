@@ -1,5 +1,5 @@
 import prisma from "./prisma";
-import { ensureBossStarted } from "./boss";
+import boss from "./boss";
 import { CLASSIFY_QUEUE } from "./classifyTicket";
 import { AUTO_RESOLVE_QUEUE } from "./autoResolveTicket";
 
@@ -65,7 +65,6 @@ export async function createTicketFromEmail({
       .map((r) => `[${r.senderType === "AGENT" ? "Agent" : "Customer"}]: ${r.body}`)
       .join("\n\n");
 
-    const boss = await ensureBossStarted();
     await boss.send(AUTO_RESOLVE_QUEUE, {
       ticketId: existingTicket.id,
       subject: existingTicket.subject,
@@ -80,7 +79,6 @@ export async function createTicketFromEmail({
     select: { id: true, subject: true, senderEmail: true, status: true, createdAt: true },
   });
 
-  const boss = await ensureBossStarted();
   await boss.send(CLASSIFY_QUEUE, { ticketId: ticket.id, subject, body });
   await boss.send(AUTO_RESOLVE_QUEUE, { ticketId: ticket.id, subject, body });
 

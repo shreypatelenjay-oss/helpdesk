@@ -2,8 +2,7 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import * as Sentry from "@sentry/node";
 import { readFileSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 import type { Job } from "pg-boss";
 import { getAIAgent } from "./aiAgent";
 import { isQuotaError } from "./aiErrors";
@@ -19,7 +18,7 @@ export interface AutoResolveTicketJob {
 }
 
 const knowledgeBase = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), "../../knowledge-base.md"),
+  join(import.meta.dir, "../../knowledge-base.md"),
   "utf-8"
 );
 
