@@ -145,12 +145,33 @@ cd client && bun run test:write  # use Claude to write tests for untested compon
 Single Railway service running `bun`. `railway.json` at the repo root defines the build/start commands.
 
 - **Build:** `bun install && bun run build` — installs all workspaces, generates the Prisma client (`postinstall` in `server/package.json`), builds the client to `client/dist`, and bundles the server to `server/dist` (the bundle is unused at runtime — see below).
-- **Start:** `bun run start` → `cd server && bun run start` → `prisma migrate deploy && bun run src/index.ts`. The server runs from source (not the bundled `dist/index.js`) because `autoResolveTicket.ts` and `index.ts` locate `knowledge-base.md` / `client/dist` via `import.meta.dir`-relative paths that assume `server/src/`'s directory depth; bundling to `server/dist` breaks those paths.
-- In production (`NODE_ENV=production`), `server/src/index.ts` serves the built `client/dist` as static files and falls back to `index.html` for non-`/api` routes (SPA routing) — one Railway service serves both frontend and API, avoiding CORS.
+- **Start:** `bun run start` → `cd server && bun run start` → `prisma migrate deploy && bun run src/index.ts`. The server runs from source (not the bundled `dist/index.js`) because `autoResolveTicket.ts` and `app.ts` locate `knowledge-base.md` / `client/dist` via directory-relative paths that assume `server/src/`'s directory depth; bundling to `server/dist` breaks those paths.
+- `server/src/app.ts` builds the Express app (routes, middleware, static serving); `server/src/index.ts` imports it, starts the pg-boss workers, and calls `app.listen()`. This split exists so `app.ts` can also be reused as the Vercel serverless entrypoint (see below) without the persistent worker startup.
+- In production (`NODE_ENV=production`, and not on Vercel — see `!process.env.VERCEL` guard in `app.ts`), the server serves the built `client/dist` as static files and falls back to `index.html` for non-`/api` routes (SPA routing) — one Railway service serves both frontend and API, avoiding CORS.
 - Add a Railway PostgreSQL plugin — it injects `DATABASE_URL` automatically.
 - Required env vars: see `server/.env.example`. `NODE_ENV=production` must be set explicitly (enables the webhook secret check, auth rate limiting, and static file serving).
 - `VITE_SENTRY_DSN` (see `client/.env.example`) is baked in at build time — set it on the Railway service *before* the build runs, not just at runtime.
 - Health check: `GET /api/health`.
+
+## Deployment (Vercel)
+
+Client and server are deployed as **two separate Vercel projects** from the same repo (Vercel doesn't run long-lived processes, so one project can't do both cleanly).
+
+**Client project** (Root Directory: `client`):
+- `client/vercel.json` overrides `installCommand`/`buildCommand` to run from the monorepo root (`cd .. && bun install`, `cd .. && bun run --filter client build`), since Vercel's own install step runs scoped to `client/` and can't resolve the `@repo/core: workspace:*` dependency otherwise.
+- SPA fallback rewrite (`/(.*)` → `/index.html`) is in `client/vercel.json`.
+- `VITE_SENTRY_DSN` must be set on the project before build (baked in at build time, not read at runtime).
+
+**Server project** (Root Directory: `server`):
+- Entry point is `server/api/[...path].ts`, a catch-all Vercel Function that re-exports the Express `app` from `server/src/app.ts` — Express apps work directly as Vercel Node functions.
+- `server/vercel.json` overrides `installCommand` the same way as the client, and defines a **Cron job** hitting `GET /api/cron/drain-jobs` on a schedule.
+- **Background jobs work differently here than on Railway/Docker.** Vercel Functions are request-triggered and can't run pg-boss's persistent `.work()` listeners or the IMAP poll loop in the background. Instead:
+  - `server/src/lib/boss.ts` exports `ensureBossStarted()`, a lazy/idempotent `boss.start()` wrapper — every code path that sends or fetches jobs awaits it (there's no boot sequence to call `.start()` once up front like there is in `index.ts`).
+  - `server/src/routes/cron.ts` (`GET /api/cron/drain-jobs`, protected by `requireCronSecret`) drains pending `classify-ticket` / `auto-resolve-ticket` jobs one at a time via `boss.fetch`/`complete`/`fail`, and calls `imapPollWorker` directly once per invocation — this replaces both the queue workers and the `*/2 * * * *` schedule from `index.ts`.
+  - Set `CRON_SECRET` on the Vercel project — Vercel automatically sends `Authorization: Bearer $CRON_SECRET` on Cron-triggered requests when that env var exists, which the middleware checks.
+  - **Vercel Cron minimum interval is once per day on the Hobby plan** (Pro allows down to once per minute). `server/vercel.json` requests `*/5 * * * *`; on Hobby this means classification, auto-resolve, and inbound email replies will lag by up to a day, not minutes. If you need near-real-time behavior on Hobby, use the Railway/Docker deployment instead, which runs true persistent workers.
+- Prisma's `generator client` block in `server/prisma/schema.prisma` includes `binaryTargets = ["native", "rhel-openssl-3.0.x"]` for Vercel's Lambda runtime — required or the Prisma client fails to load its query engine at runtime on Vercel.
+- Since client and server are on different Vercel domains/projects, `TRUSTED_ORIGINS` (server) must include the client's Vercel URL, and `better-auth` cross-origin session cookies need `SameSite=None; Secure` — this is **not yet wired up**; same-origin deployment (Railway/Docker) avoids this entirely.
 
 ## Documentation
 
