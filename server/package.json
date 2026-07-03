@@ -6,7 +6,7 @@
     "dev": "bun run --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
     "seed": "bun run prisma/seed.ts",
-    "test": "bun test"
+    "test": "bun test --isolate"
   },
   "prisma": {
     "seed": "bun run prisma/seed.ts"
@@ -16,6 +16,7 @@
     "@better-auth/utils": "^0.4.2",
     "@prisma/client": "5",
     "@repo/core": "workspace:*",
+    "@sentry/node": "^10.63.0",
     "ai": "^7.0.4",
     "better-auth": "^1.6.20",
     "express": "^5.2.1",
@@ -29,6 +30,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.14",
     "@types/express": "^5.0.6",
     "@types/helmet": "^4.0.0",
     "@types/mailparser": "^3.4.6",

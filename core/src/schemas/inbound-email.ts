@@ -3,6 +3,7 @@ import { z } from "zod";
 export const inboundEmailSchema = z
   .object({
     from: z.string().email(),
+    to: z.string().optional(),
     subject: z.string().min(1),
     text: z.string().optional(),
     html: z.string().optional(),

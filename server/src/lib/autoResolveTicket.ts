@@ -1,9 +1,12 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import * as Sentry from "@sentry/node";
 import { readFileSync } from "fs";
 import { join } from "path";
 import type { Job } from "pg-boss";
 import { getAIAgent } from "./aiAgent";
+import { isQuotaError } from "./aiErrors";
+import { sendReplyEmail } from "./mailer";
 import prisma from "./prisma";
 
 export const AUTO_RESOLVE_QUEUE = "auto-resolve-ticket";
@@ -30,6 +33,16 @@ export async function autoResolveTicketWorker([job]: Job<AutoResolveTicketJob>[]
 
   const aiAgent = await getAIAgent();
 
+  const existing = await prisma.ticket.findUniqueOrThrow({
+    where: { id: ticketId },
+    select: { assignedTo: true },
+  });
+
+  // A human agent already owns this ticket — don't let the AI hijack it out from under them.
+  if (existing.assignedTo && existing.assignedTo !== aiAgent.id) {
+    return;
+  }
+
   const ticket = await prisma.ticket.update({
     where: { id: ticketId },
     data: { status: "PROCESSING", assignedTo: aiAgent.id },
@@ -41,7 +54,7 @@ export async function autoResolveTicketWorker([job]: Job<AutoResolveTicketJob>[]
   let text: string;
   try {
     ({ text } = await generateText({
-      model: google("gemini-2.5-flash-lite"),
+      model: google("gemini-2.5-flash"),
       prompt: `You are a professional support agent for an online learning platform called Code with Mosh. Use the knowledge base below to determine if you can fully resolve this customer support ticket.
 
 KNOWLEDGE BASE:
@@ -65,14 +78,22 @@ Reply writing rules (apply only when canResolve is true):
 {"canResolve": boolean, "reply": string}`,
     }));
   } catch (err) {
-    console.error(`[autoResolveTicket] generateText failed for ticket ${ticketId}:`, err);
+    const quotaExceeded = isQuotaError(err);
+    console.error(`[autoResolveTicket] generateText failed for ticket ${ticketId}${quotaExceeded ? " (quota exceeded)" : ""}:`, err);
+    Sentry.captureException(err, { tags: { worker: "autoResolveTicket", quotaExceeded }, extra: { ticketId } });
     await prisma.ticket.update({ where: { id: ticketId }, data: { status: "OPEN", assignedTo: null } });
     return;
   }
 
+  // Gemini sometimes wraps the JSON in a markdown code fence despite the prompt saying not to.
+  const jsonText = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+
   let parsed: { canResolve: boolean; reply: string };
   try {
-    parsed = JSON.parse(text.trim());
+    parsed = JSON.parse(jsonText);
   } catch {
     console.warn(`[autoResolveTicket] failed to parse AI response for ticket ${ticketId}:`, text);
     await prisma.ticket.update({ where: { id: ticketId }, data: { status: "OPEN", assignedTo: null } });
@@ -93,4 +114,11 @@ Reply writing rules (apply only when canResolve is true):
       data: { status: "RESOLVED", resolvedByAI: true, resolvedAt: new Date() },
     }),
   ]);
+
+  await sendReplyEmail({
+    to: ticket.senderEmail,
+    subject,
+    text: parsed.reply,
+    ticketId,
+  });
 }

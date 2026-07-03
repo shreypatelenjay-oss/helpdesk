@@ -9,23 +9,42 @@ const ticketCreate = mock((args: any) =>
     createdAt: new Date(),
   })
 );
+const ticketFindUnique = mock(() => Promise.resolve(null));
+const ticketFindFirst = mock(() => Promise.resolve(null));
+const ticketUpdate = mock((args: any) => Promise.resolve({ id: args.where.id, ...args.data }));
+const replyCreate = mock(() => Promise.resolve({ id: "reply-1" }));
+const replyFindMany = mock(() => Promise.resolve([]));
+const transaction = mock((ops: Promise<unknown>[]) => Promise.all(ops));
 const bossSend = mock(() => Promise.resolve());
 
 mock.module("./prisma", () => ({
-  default: { ticket: { create: ticketCreate } },
+  default: {
+    ticket: { create: ticketCreate, findUnique: ticketFindUnique, findFirst: ticketFindFirst, update: ticketUpdate },
+    reply: { create: replyCreate, findMany: replyFindMany },
+    $transaction: transaction,
+  },
 }));
 mock.module("./boss", () => ({
   default: { send: bossSend },
 }));
 
-const { createTicketFromEmail } = await import("./createTicketFromEmail");
+const { createTicketFromEmail, syncAgentReplyFromEmail } = await import("./createTicketFromEmail");
 const { CLASSIFY_QUEUE } = await import("./classifyTicket");
 const { AUTO_RESOLVE_QUEUE } = await import("./autoResolveTicket");
 
 describe("createTicketFromEmail", () => {
   beforeEach(() => {
     ticketCreate.mockClear();
+    ticketFindUnique.mockClear();
+    ticketFindFirst.mockClear();
+    ticketUpdate.mockClear();
+    replyCreate.mockClear();
+    replyFindMany.mockClear();
+    transaction.mockClear();
     bossSend.mockClear();
+    ticketFindUnique.mockImplementation(() => Promise.resolve(null));
+    ticketFindFirst.mockImplementation(() => Promise.resolve(null));
+    replyFindMany.mockImplementation(() => Promise.resolve([]));
   });
 
   test("uses the plain text body when provided", async () => {
@@ -79,5 +98,141 @@ describe("createTicketFromEmail", () => {
       status: "NEW",
       createdAt: expect.any(Date),
     });
+  });
+
+  test("threads a reply sent to the plus-addressed ticket token onto the existing ticket instead of creating a new one", async () => {
+    ticketFindUnique.mockImplementation(() =>
+      Promise.resolve({ id: "cmticket42", subject: "Refund request", senderEmail: "student@example.com", body: "original body", status: "RESOLVED" })
+    );
+
+    const result = await createTicketFromEmail({
+      from: "student@example.com",
+      subject: "Re: Refund request",
+      text: "Any update?",
+      to: "shreypatel1231+ticket-cmticket42@gmail.com",
+    });
+
+    expect(ticketFindUnique).toHaveBeenCalledWith({ where: { id: "cmticket42" } });
+    expect(ticketCreate).not.toHaveBeenCalled();
+    expect(replyCreate).toHaveBeenCalledWith({
+      data: { ticketId: "cmticket42", body: "Any update?", senderType: "CUSTOMER" },
+    });
+    expect(ticketUpdate).toHaveBeenCalledWith({
+      where: { id: "cmticket42" },
+      data: { status: "OPEN", resolvedByAI: false, resolvedAt: null },
+    });
+    expect(result.id).toBe("cmticket42");
+  });
+
+  test("falls back to matching by sender + normalized subject when there is no plus-address tag", async () => {
+    ticketFindFirst.mockImplementation(() =>
+      Promise.resolve({ id: "ticket-7", subject: "Need help", senderEmail: "student@example.com", body: "original body", status: "OPEN" })
+    );
+
+    await createTicketFromEmail({
+      from: "student@example.com",
+      subject: "Re: Need help",
+      text: "Following up",
+    });
+
+    expect(ticketFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ senderEmail: "student@example.com", subject: { equals: "need help", mode: "insensitive" } }),
+      })
+    );
+    expect(ticketCreate).not.toHaveBeenCalled();
+    expect(replyCreate).toHaveBeenCalledWith({
+      data: { ticketId: "ticket-7", body: "Following up", senderType: "CUSTOMER" },
+    });
+  });
+
+  test("re-enqueues auto-resolve (not classify) with full conversation context when threading a reply", async () => {
+    ticketFindFirst.mockImplementation(() =>
+      Promise.resolve({ id: "ticket-7", subject: "Need help", senderEmail: "student@example.com", body: "original body", status: "OPEN" })
+    );
+    replyFindMany.mockImplementation(() =>
+      Promise.resolve([{ body: "first agent reply", senderType: "AGENT" }])
+    );
+
+    await createTicketFromEmail({
+      from: "student@example.com",
+      subject: "Re: Need help",
+      text: "Following up",
+    });
+
+    expect(bossSend).toHaveBeenCalledTimes(1);
+    expect(bossSend).toHaveBeenCalledWith(AUTO_RESOLVE_QUEUE, {
+      ticketId: "ticket-7",
+      subject: "Need help",
+      body: "original body\n\n[Agent]: first agent reply",
+    });
+  });
+
+  test("creates a new ticket when sender + subject don't match any existing non-closed ticket", async () => {
+    await createTicketFromEmail({
+      from: "student@example.com",
+      subject: "Re: Something unrelated",
+      text: "hello",
+    });
+
+    expect(ticketCreate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("syncAgentReplyFromEmail", () => {
+  beforeEach(() => {
+    ticketFindUnique.mockClear();
+    ticketFindFirst.mockClear();
+    replyCreate.mockClear();
+    ticketFindUnique.mockImplementation(() => Promise.resolve(null));
+    ticketFindFirst.mockImplementation(() => Promise.resolve(null));
+  });
+
+  test("logs the reply against the ticket matched via the plus-addressed tag", async () => {
+    ticketFindUnique.mockImplementation(() =>
+      Promise.resolve({ id: "cmticket42", subject: "Refund request", senderEmail: "student@example.com" })
+    );
+
+    await syncAgentReplyFromEmail({
+      to: "student@example.com, shreypatel1231+ticket-cmticket42@gmail.com",
+      subject: "Re: Refund request",
+      text: "Handled this over email, refund issued.",
+    });
+
+    expect(ticketFindUnique).toHaveBeenCalledWith({ where: { id: "cmticket42" } });
+    expect(replyCreate).toHaveBeenCalledWith({
+      data: { ticketId: "cmticket42", body: "Handled this over email, refund issued.", senderType: "AGENT" },
+    });
+  });
+
+  test("falls back to matching by recipient email + normalized subject when there is no plus tag", async () => {
+    ticketFindFirst.mockImplementation(() =>
+      Promise.resolve({ id: "ticket-7", subject: "Need help", senderEmail: "student@example.com" })
+    );
+
+    await syncAgentReplyFromEmail({
+      to: "student@example.com",
+      subject: "Re: Need help",
+      text: "Following up from Gmail directly",
+    });
+
+    expect(ticketFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ senderEmail: "student@example.com", subject: { equals: "need help", mode: "insensitive" } }),
+      })
+    );
+    expect(replyCreate).toHaveBeenCalledWith({
+      data: { ticketId: "ticket-7", body: "Following up from Gmail directly", senderType: "AGENT" },
+    });
+  });
+
+  test("does nothing when no ticket matches", async () => {
+    await syncAgentReplyFromEmail({
+      to: "nobody@example.com",
+      subject: "Re: Unrelated",
+      text: "hello",
+    });
+
+    expect(replyCreate).not.toHaveBeenCalled();
   });
 });

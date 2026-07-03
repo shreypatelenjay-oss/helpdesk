@@ -75,6 +75,10 @@ Auth is implemented with **better-auth** (email/password, DB sessions via Prisma
 - `TRUSTED_ORIGINS` — comma-separated client origins (default: `http://localhost:3000`)
 - `GMAIL_USER` — Gmail address used to send outbound reply emails (see `server/src/lib/mailer.ts`)
 - `GMAIL_APP_PASSWORD` — Gmail App Password for `GMAIL_USER` (requires 2FA on the Google account; not the account's normal login password). Used for both outbound SMTP sending (`server/src/lib/mailer.ts`) and inbound IMAP polling (`server/src/lib/imapPoll.ts`) — requires IMAP enabled on the Gmail account (Gmail Settings → "Forwarding and POP/IMAP" → Enable IMAP)
+- `SENTRY_DSN` — Sentry DSN for server-side error tracking (`server/src/lib/sentry.ts`). Optional; when unset, Sentry init is skipped.
+
+**Required env vars (client):**
+- `VITE_SENTRY_DSN` — Sentry DSN for client-side error tracking (`client/src/main.tsx`). Optional; when unset, Sentry init is skipped.
 
 ## Testing
 

@@ -47,4 +47,30 @@ describe("sendReplyEmail", () => {
     expect(arg.text).toBe("plain body");
     expect(arg.html).toBe("<p>html body</p>");
   });
+
+  test("sets a plus-addressed Reply-To for the ticket so inbound replies can be threaded", async () => {
+    await sendReplyEmail({
+      to: "customer@example.com",
+      subject: "Ticket update",
+      text: "plain body",
+      ticketId: "cmticket42",
+    });
+
+    const arg = sendMail.mock.calls[0][0];
+    expect(arg.replyTo).toBe("sender+ticket-cmticket42@gmail.com");
+  });
+
+  test("omits Reply-To when no ticketId is given", async () => {
+    await sendReplyEmail({ to: "customer@example.com", subject: "Ticket update", text: "plain body" });
+
+    const arg = sendMail.mock.calls[0][0];
+    expect(arg.replyTo).toBeUndefined();
+  });
+
+  test("marks the email so Sent-folder polling can recognize it as already-synced", async () => {
+    await sendReplyEmail({ to: "customer@example.com", subject: "Ticket update", text: "plain body" });
+
+    const arg = sendMail.mock.calls[0][0];
+    expect(arg.headers).toEqual({ "X-Helpdesk-App-Reply": "1" });
+  });
 });

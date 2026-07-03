@@ -191,7 +191,7 @@ router.post("/polish-reply", async (req, res) => {
   const agentName = (req as any).user?.name ?? "Agent";
 
   const { text } = await generateText({
-    model: google("gemini-2.5-flash-lite"),
+    model: google("gemini-2.5-flash"),
     prompt: `You are a support agent assistant. Improve the following draft reply to make it clearer, more professional, and empathetic. End the reply with a sign-off using the agent's name "${agentName}". Return only the improved reply text with no preamble, explanation, or quotation marks.\n\nDraft:\n${parsed.data.body}`,
   });
 
@@ -232,7 +232,7 @@ ${conversation ? `Conversation:\n${conversation}` : "No replies yet."}
 Provide only the summary, with no preamble.`;
 
   const { text } = await generateText({
-    model: google("gemini-2.5-flash-lite"),
+    model: google("gemini-2.5-flash"),
     prompt,
   });
 
@@ -262,6 +262,7 @@ router.post("/:id/reply", async (req, res) => {
     subject: ticket.subject,
     text: parsed.data.body,
     html: parsed.data.bodyHTML ?? undefined,
+    ticketId: id,
   });
 
   res.status(201).json(reply);

@@ -98,6 +98,13 @@ model Reply {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }
 
+model ImapSyncState {
+  mailbox     String   @id
+  uidValidity BigInt
+  lastUid     Int
+  updatedAt   DateTime @updatedAt
+}
+
 enum SenderType {
   AGENT
   CUSTOMER

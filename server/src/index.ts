@@ -1,3 +1,5 @@
+import "./lib/sentry";
+import * as Sentry from "@sentry/node";
 import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -46,6 +48,8 @@ app.get("/api/health", async (_req, res) => {
     res.status(503).json({ status: "degraded", db: "disconnected" });
   }
 });
+
+Sentry.setupExpressErrorHandler(app);
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
