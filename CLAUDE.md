@@ -140,6 +140,18 @@ cd client && bun run test:write  # use Claude to write tests for untested compon
 - **Forms:** Use **React Hook Form** + **Zod** for all forms. Define a `z.object(...)` schema, derive the type with `z.infer<typeof schema>`, and wire them together via `zodResolver` from `@hookform/resolvers/zod`. Use `register`, `handleSubmit`, and `formState.errors` — never manage form state or validation manually with `useState`.
 - **Shared types & schemas:** The `core` package (`@repo/core`) is the single source of truth for domain enums (e.g. `Role`), union types (e.g. `TicketStatus`, `SenderType`), and Zod schemas (e.g. `createUserSchema`, `createReplySchema`) shared between client and server. Import from `@repo/core` in both. Never hardcode role strings like `"ADMIN"` or `"AGENT"` anywhere — always use the `Role` enum (`Role.ADMIN`, `Role.AGENT`). Never inline domain union types like `"OPEN" | "RESOLVED" | "CLOSED"` or `"AGENT" | "CUSTOMER"` — always declare them in `core` and import from `@repo/core`. This applies to components, routes, middleware, and test fixtures.
 
+## Deployment (Railway)
+
+Single Railway service running `bun`. `railway.json` at the repo root defines the build/start commands.
+
+- **Build:** `bun install && bun run build` — installs all workspaces, generates the Prisma client (`postinstall` in `server/package.json`), builds the client to `client/dist`, and bundles the server to `server/dist` (the bundle is unused at runtime — see below).
+- **Start:** `bun run start` → `cd server && bun run start` → `prisma migrate deploy && bun run src/index.ts`. The server runs from source (not the bundled `dist/index.js`) because `autoResolveTicket.ts` and `index.ts` locate `knowledge-base.md` / `client/dist` via `import.meta.dir`-relative paths that assume `server/src/`'s directory depth; bundling to `server/dist` breaks those paths.
+- In production (`NODE_ENV=production`), `server/src/index.ts` serves the built `client/dist` as static files and falls back to `index.html` for non-`/api` routes (SPA routing) — one Railway service serves both frontend and API, avoiding CORS.
+- Add a Railway PostgreSQL plugin — it injects `DATABASE_URL` automatically.
+- Required env vars: see `server/.env.example`. `NODE_ENV=production` must be set explicitly (enables the webhook secret check, auth rate limiting, and static file serving).
+- `VITE_SENTRY_DSN` (see `client/.env.example`) is baked in at build time — set it on the Railway service *before* the build runs, not just at runtime.
+- Health check: `GET /api/health`.
+
 ## Documentation
 
 Use the **context7 MCP** (`mcp__context7__resolve-library-id` + `mcp__context7__query-docs`) to fetch up-to-date documentation for any library before implementing — especially Prisma, NextAuth.js, shadcn/ui, Anthropic SDK, and Vite/React.

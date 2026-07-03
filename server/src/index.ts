@@ -4,6 +4,7 @@ import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
+import path from "path";
 import { auth } from "./lib/auth";
 import prisma from "./lib/prisma";
 import usersRouter from "./routes/users";
@@ -48,6 +49,14 @@ app.get("/api/health", async (_req, res) => {
     res.status(503).json({ status: "degraded", db: "disconnected" });
   }
 });
+
+if (process.env.NODE_ENV === "production") {
+  const clientDist = path.join(import.meta.dir, "../../client/dist");
+  app.use(express.static(clientDist));
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 Sentry.setupExpressErrorHandler(app);
 

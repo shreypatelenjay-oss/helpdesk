@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "prisma migrate deploy && bun run src/index.ts",
+    "postinstall": "prisma generate",
     "seed": "bun run prisma/seed.ts",
     "test": "bun test --isolate"
   },

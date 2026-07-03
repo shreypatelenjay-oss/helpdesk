@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "build": "bun run --filter '*' build",
+    "start": "cd server && bun run start",
     "test:e2e": "bunx playwright test",
     "test:e2e:ui": "bunx playwright test --ui --output=e2e/test-results"
   },
