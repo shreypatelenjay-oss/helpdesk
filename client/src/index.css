@@ -48,39 +48,40 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Ink Ledger — paper workspace, indigo-ink brand, deep-ink sidebar */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --background: #f6f7f9;
+    --foreground: #1b2032;
+    --card: #ffffff;
+    --card-foreground: #1b2032;
+    --popover: #ffffff;
+    --popover-foreground: #1b2032;
+    --primary: #3b4a8c;
+    --primary-foreground: #ffffff;
+    --secondary: #edeff4;
+    --secondary-foreground: #2a3350;
+    --muted: #edeff4;
+    --muted-foreground: #626878;
+    --accent: #e8ebf5;
+    --accent-foreground: #32407e;
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --border: #e4e7ed;
+    --input: #dfe3ea;
+    --ring: #3b4a8c;
+    --chart-1: #3b4a8c;
+    --chart-2: #6274b3;
+    --chart-3: #8d9ccb;
+    --chart-4: #b9c2de;
+    --chart-5: #dde2ef;
+    --radius: 0.5rem;
+    --sidebar: #20263f;
+    --sidebar-foreground: #c7cce0;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: #20263f;
+    --sidebar-accent: #2b3354;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #2b3354;
+    --sidebar-ring: #8a97c9;
 }
 
 .dark {

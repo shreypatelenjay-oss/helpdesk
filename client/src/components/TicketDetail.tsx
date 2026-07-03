@@ -2,11 +2,11 @@ import { Card, CardContent } from "./ui/card";
 import type { Ticket } from "@repo/core";
 
 const STATUS_STYLES = {
-  NEW: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  PROCESSING: "bg-orange-100 text-orange-700 border-orange-200",
-  OPEN: "bg-blue-100 text-blue-700 border-blue-200",
-  RESOLVED: "bg-green-100 text-green-700 border-green-200",
-  CLOSED: "bg-gray-100 text-gray-600 border-gray-200",
+  NEW: "text-primary border-primary/30 bg-primary/5",
+  PROCESSING: "text-amber-700 border-amber-300 bg-amber-50",
+  OPEN: "text-sky-700 border-sky-300 bg-sky-50",
+  RESOLVED: "text-emerald-700 border-emerald-300 bg-emerald-50",
+  CLOSED: "text-muted-foreground border-border bg-muted",
 };
 
 const STATUS_LABELS = {
@@ -18,9 +18,9 @@ const STATUS_LABELS = {
 };
 
 const CATEGORY_STYLES = {
-  GENERAL_QUESTION: "bg-purple-100 text-purple-700 border-purple-200",
-  TECHNICAL_QUESTION: "bg-amber-100 text-amber-700 border-amber-200",
-  REFUND_REQUEST: "bg-rose-100 text-rose-700 border-rose-200",
+  GENERAL_QUESTION: "text-muted-foreground border-border bg-card",
+  TECHNICAL_QUESTION: "text-muted-foreground border-border bg-card",
+  REFUND_REQUEST: "text-muted-foreground border-border bg-card",
 };
 
 const CATEGORY_LABELS = {
@@ -35,45 +35,40 @@ type Props = { ticket: Ticket };
 export function TicketDetail({ ticket }: Props) {
   return (
     <div className="space-y-6">
-      {/* Badges */}
-      <div className="flex items-center gap-2.5">
-        <span
-          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${STATUS_STYLES[ticket.status]}`}
-        >
-          {STATUS_LABELS[ticket.status]}
-        </span>
-        {ticket.category && (
-          <span
-            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${CATEGORY_STYLES[ticket.category]}`}
-          >
-            {CATEGORY_LABELS[ticket.category]}
-          </span>
-        )}
-      </div>
-
       {/* Heading */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{ticket.subject}</h1>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>From:</span>
-          <span className="font-semibold text-gray-700">{ticket.senderEmail}</span>
-          <span>•</span>
-          <span>Created:</span>
-          <span className="font-medium text-gray-700">
-            {new Date(ticket.createdAt).toLocaleString()}
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[ticket.status]}`}
+          >
+            <span className="size-1.5 rounded-full bg-current" aria-hidden />
+            {STATUS_LABELS[ticket.status]}
           </span>
+          {ticket.category && (
+            <span
+              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${CATEGORY_STYLES[ticket.category]}`}
+            >
+              {CATEGORY_LABELS[ticket.category]}
+            </span>
+          )}
         </div>
+        <h1 className="text-2xl md:text-[28px] font-semibold text-foreground tracking-tight leading-tight">
+          {ticket.subject}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground/80">{ticket.senderEmail}</span>
+          <span className="mx-2" aria-hidden>·</span>
+          <span className="tabular-nums">{new Date(ticket.createdAt).toLocaleString()}</span>
+        </p>
       </div>
 
       {/* Body */}
-      <Card className="shadow-xs border-gray-200/80">
-        <CardContent className="p-6 space-y-4">
-          <h3 className="text-lg font-bold text-gray-950 border-b border-gray-100 pb-3">
-            Description
-          </h3>
-          <div className="whitespace-pre-wrap text-gray-700 leading-relaxed font-sans text-sm md:text-base">
-            {ticket.body}
-          </div>
+      <Card className="py-0 gap-0 shadow-xs">
+        <div className="border-b border-border bg-muted/40 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Description
+        </div>
+        <CardContent className="px-5 py-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+          {ticket.body}
         </CardContent>
       </Card>
     </div>

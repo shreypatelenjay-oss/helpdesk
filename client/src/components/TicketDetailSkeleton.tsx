@@ -3,7 +3,7 @@ import { Skeleton } from "./ui/skeleton";
 
 export function TicketDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50" data-testid="detail-loading">
+    <div className="min-h-screen bg-background md:pl-60" data-testid="detail-loading">
       <Navbar />
       <div className="max-w-5xl mx-auto p-8 space-y-6">
         <div className="flex items-center gap-4">

@@ -14,7 +14,7 @@ function axiosError(e: unknown, fallback: string) {
 }
 
 const SELECT_CLASS =
-  "w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white text-gray-800 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer disabled:opacity-50 transition-all";
+  "w-full px-3 py-2 text-sm rounded-lg border border-border bg-card text-foreground hover:border-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer disabled:opacity-50 transition-all";
 
 export function UpdateTicket({ ticketId, ticket }: Props) {
   const qc = useQueryClient();
@@ -34,11 +34,11 @@ export function UpdateTicket({ ticketId, ticket }: Props) {
   });
 
   return (
-    <Card className="shadow-xs border-gray-200/80">
-      <CardContent className="p-6 space-y-5">
-        <h3 className="text-lg font-bold text-gray-950 border-b border-gray-100 pb-3">
-          Ticket Attributes
-        </h3>
+    <Card className="py-0 gap-0 shadow-xs">
+      <div className="border-b border-border bg-muted/40 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Ticket Attributes
+      </div>
+      <CardContent className="px-5 py-4 space-y-5">
 
         {mutation.isError && (
           <p className="text-xs text-destructive">
@@ -48,7 +48,7 @@ export function UpdateTicket({ ticketId, ticket }: Props) {
 
         {/* Status */}
         <div className="space-y-1.5">
-          <label htmlFor="ticket-status-select" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <label htmlFor="ticket-status-select" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Status
           </label>
           <div className="relative">
@@ -64,14 +64,14 @@ export function UpdateTicket({ ticketId, ticket }: Props) {
               <option value="CLOSED">Closed</option>
             </select>
             {mutation.isPending && (
-              <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />
+              <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
         </div>
 
         {/* Category */}
         <div className="space-y-1.5">
-          <label htmlFor="ticket-category-select" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <label htmlFor="ticket-category-select" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Category
           </label>
           <div className="relative">
@@ -92,14 +92,14 @@ export function UpdateTicket({ ticketId, ticket }: Props) {
               <option value="REFUND_REQUEST">Refund</option>
             </select>
             {mutation.isPending && (
-              <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />
+              <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
         </div>
 
         {/* Assigned Agent */}
         <div className="space-y-1.5">
-          <label htmlFor="ticket-assignee-select" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <label htmlFor="ticket-assignee-select" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Assigned Agent
           </label>
           <div className="relative">
@@ -122,7 +122,7 @@ export function UpdateTicket({ ticketId, ticket }: Props) {
               ))}
             </select>
             {mutation.isPending && (
-              <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />
+              <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
         </div>

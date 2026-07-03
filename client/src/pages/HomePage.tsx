@@ -52,10 +52,10 @@ function StatCard({ label, value, icon }: StatCardProps) {
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-gray-500">{label}</span>
-          <span className="text-gray-400">{icon}</span>
+          <span className="text-sm text-muted-foreground">{label}</span>
+          <span className="text-muted-foreground/70">{icon}</span>
         </div>
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
+        <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">{value}</p>
       </CardContent>
     </Card>
   );
@@ -88,13 +88,13 @@ export function HomePage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background md:pl-60">
       <Navbar />
       <main className="p-6 max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-6">Dashboard</h1>
 
         {statsQuery.isError && (
-          <p className="text-red-500 mb-4">Failed to load stats. Please refresh.</p>
+          <p className="text-destructive mb-4">Failed to load stats. Please refresh.</p>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
@@ -137,7 +137,7 @@ export function HomePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold text-gray-700">
+            <CardTitle className="text-base font-semibold text-foreground/80">
               Tickets per Day — Last 30 Days
             </CardTitle>
           </CardHeader>
@@ -145,11 +145,11 @@ export function HomePage() {
             {chartQuery.isLoading ? (
               <Skeleton className="h-56 w-full" />
             ) : chartQuery.isError ? (
-              <p className="text-red-500 text-sm">Failed to load chart data.</p>
+              <p className="text-destructive text-sm">Failed to load chart data.</p>
             ) : (
               <ResponsiveContainer width="100%" height={224}>
                 <BarChart data={chartQuery.data} barSize={14}>
-                  <CartesianGrid vertical={false} stroke="#f0f0f0" />
+                  <CartesianGrid vertical={false} stroke="#e4e7ed" />
                   <XAxis
                     dataKey="date"
                     tickFormatter={formatChartDate}
@@ -166,7 +166,7 @@ export function HomePage() {
                     width={28}
                   />
                   <Tooltip
-                    cursor={{ fill: "#f9fafb" }}
+                    cursor={{ fill: "#edeff4" }}
                     contentStyle={{
                       fontSize: 12,
                       borderRadius: 6,
@@ -182,7 +182,7 @@ export function HomePage() {
                       );
                     }}
                   />
-                  <Bar dataKey="count" fill="#6366f1" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="count" fill="#3b4a8c" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}

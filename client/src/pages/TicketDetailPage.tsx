@@ -67,11 +67,11 @@ export function TicketDetailPage() {
 
   if (error || !ticket) {
     return (
-      <div className="min-h-screen bg-gray-50" data-testid="detail-error">
+      <div className="min-h-screen bg-background md:pl-60" data-testid="detail-error">
         <Navbar />
         <div className="max-w-5xl mx-auto p-8 text-center space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900">Ticket not found</h2>
-          <p className="text-gray-500">
+          <h2 className="text-2xl font-bold text-foreground">Ticket not found</h2>
+          <p className="text-muted-foreground">
             {error ? axiosError(error, "Failed to load ticket details") : "The requested ticket does not exist."}
           </p>
           <Link to="/tickets" className="hover:no-underline">
@@ -85,13 +85,13 @@ export function TicketDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" data-testid="detail-container">
+    <div className="min-h-screen bg-background md:pl-60" data-testid="detail-container">
       <Navbar />
       <div className="max-w-5xl mx-auto p-8 space-y-6">
         {/* Back button */}
         <div>
           <Link to="/tickets" className="hover:no-underline">
-            <Button variant="outline" size="sm" className="gap-2 text-gray-600 hover:text-gray-900">
+            <Button variant="outline" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" /> Back to Tickets
             </Button>
           </Link>
@@ -129,57 +129,60 @@ export function TicketDetailPage() {
               )}
 
               {summary && (
-                <Card className="shadow-xs border-amber-200/80 bg-amber-50/50">
-                  <CardContent className="p-5 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-amber-500" />
-                      <h4 className="text-sm font-semibold text-amber-800">AI Summary</h4>
-                    </div>
-                    <p className="text-sm text-amber-900 leading-relaxed">{summary}</p>
-                  </CardContent>
+                <Card className="py-0 gap-0 shadow-xs ring-primary/20 bg-accent/40">
+                  <div className="flex items-center gap-2 border-b border-primary/15 px-5 py-2.5">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-accent-foreground">AI Summary</h4>
+                  </div>
+                  <CardContent className="px-5 py-4 text-sm leading-relaxed text-foreground/90">{summary}</CardContent>
                 </Card>
               )}
             </div>
 
             {/* Reply Thread */}
-            <Card className="shadow-xs border-gray-200/80">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="text-lg font-bold text-gray-950 border-b border-gray-100 pb-3">
-                  Replies
-                </h3>
+            <Card className="py-0 gap-0 shadow-xs">
+              <div className="border-b border-border bg-muted/40 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Replies
+              </div>
+              <CardContent className="px-5 py-4 space-y-4">
 
                 {ticket.replies.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No replies yet.</p>
+                  <p className="text-sm text-muted-foreground/60 text-center py-6">No replies yet.</p>
                 ) : (
-                  <div className="space-y-3" data-testid="reply-thread">
+                  <div className="space-y-5" data-testid="reply-thread">
                     {ticket.replies.map((reply) => (
-                      <div
-                        key={reply.id}
-                        className={`flex ${reply.senderType === "AGENT" ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
+                      <div key={reply.id} className="flex gap-3">
+                        <span
+                          className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${
                             reply.senderType === "AGENT"
                               ? "bg-primary text-primary-foreground"
-                              : "bg-gray-100 text-gray-800"
+                              : "bg-muted text-muted-foreground"
                           }`}
+                          aria-hidden
                         >
-                          {reply.bodyHTML ? (
-                            <div
-                              className="prose prose-sm max-w-none"
-                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.bodyHTML) }}
-                            />
-                          ) : (
-                            <p className="whitespace-pre-wrap">{DOMPurify.sanitize(reply.body, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}</p>
-                          )}
-                          <p
-                            className={`mt-1.5 text-xs ${
-                              reply.senderType === "AGENT" ? "text-primary-foreground/70" : "text-gray-400"
-                            }`}
-                          >
+                          {reply.senderType === "AGENT" ? "A" : "C"}
+                        </span>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground tabular-nums">
                             {reply.senderType === "AGENT" ? "Agent" : "Customer"} ·{" "}
                             {new Date(reply.sentAt).toLocaleString()}
                           </p>
+                          <div
+                            className={`rounded-lg border px-3.5 py-2.5 text-sm leading-relaxed ${
+                              reply.senderType === "AGENT"
+                                ? "border-primary/20 bg-accent/50 text-foreground"
+                                : "border-border bg-background text-foreground/90"
+                            }`}
+                          >
+                            {reply.bodyHTML ? (
+                              <div
+                                className="prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.bodyHTML) }}
+                              />
+                            ) : (
+                              <p className="whitespace-pre-wrap">{DOMPurify.sanitize(reply.body, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -189,7 +192,7 @@ export function TicketDetailPage() {
                 {/* Reply form */}
                 <form
                   onSubmit={replyForm.handleSubmit((values) => sendReply.mutate(values))}
-                  className="space-y-3 pt-2 border-t border-gray-100"
+                  className="space-y-3 pt-4 border-t border-border"
                 >
                   <Textarea
                     {...replyForm.register("body")}

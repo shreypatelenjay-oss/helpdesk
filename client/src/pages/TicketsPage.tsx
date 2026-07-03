@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   useReactTable,
@@ -28,11 +28,20 @@ import {
 
 
 const STATUS_STYLES: Record<TicketStatus, string> = {
-  NEW: "bg-yellow-100 text-yellow-700",
-  PROCESSING: "bg-orange-100 text-orange-700",
-  OPEN: "bg-blue-100 text-blue-700",
-  RESOLVED: "bg-green-100 text-green-700",
-  CLOSED: "bg-gray-100 text-gray-600",
+  NEW: "text-primary",
+  PROCESSING: "text-amber-600",
+  OPEN: "text-sky-700",
+  RESOLVED: "text-emerald-700",
+  CLOSED: "text-muted-foreground",
+};
+
+// Ledger edge: each row carries its status as a colored left rule; NEW is loudest.
+const ROW_ACCENT: Record<TicketStatus, string> = {
+  NEW: "border-l-primary bg-primary/[0.035]",
+  PROCESSING: "border-l-amber-400",
+  OPEN: "border-l-sky-500",
+  RESOLVED: "border-l-emerald-500",
+  CLOSED: "border-l-transparent",
 };
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
@@ -72,7 +81,7 @@ const columns = [
   }),
   columnHelper.accessor("senderEmail", {
     header: "From",
-    cell: (info) => <span className="text-gray-600 truncate block">{info.getValue()}</span>,
+    cell: (info) => <span className="text-muted-foreground truncate block">{info.getValue()}</span>,
   }),
   columnHelper.accessor("status", {
     header: "Status",
@@ -80,8 +89,9 @@ const columns = [
       const status = info.getValue();
       return (
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}
+          className={`inline-flex items-center gap-1.5 text-xs font-medium ${STATUS_STYLES[status]}`}
         >
+          <span className="size-1.5 rounded-full bg-current" aria-hidden />
           {STATUS_LABELS[status]}
         </span>
       );
@@ -92,11 +102,11 @@ const columns = [
     cell: (info) => {
       const cat = info.getValue();
       return cat ? (
-        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {CATEGORY_LABELS[cat]}
         </span>
       ) : (
-        <span className="text-gray-400">—</span>
+        <span className="text-muted-foreground/50">—</span>
       );
     },
   }),
@@ -106,23 +116,37 @@ const columns = [
     cell: (info) => {
       const agent = info.getValue();
       return agent ? (
-        <span className="text-gray-600 truncate block">{agent.name ?? agent.email}</span>
+        <span className="text-muted-foreground truncate block">{agent.name ?? agent.email}</span>
       ) : (
-        <span className="text-gray-400">Unassigned</span>
+        <span className="text-muted-foreground/50">Unassigned</span>
       );
     },
   }),
   columnHelper.accessor("createdAt", {
     header: "Created",
     cell: (info) => (
-      <span className="text-gray-500">{new Date(info.getValue()).toLocaleDateString()}</span>
+      <span className="text-muted-foreground tabular-nums">
+        {new Date(info.getValue()).toLocaleDateString()}
+      </span>
     ),
   }),
 ];
 
 export function TicketsPage() {
   const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Status lives in the URL so the sidebar's status links drive this page.
+  const statusFilter = searchParams.get("status") ?? "ALL";
+  const setStatusFilter = (value: string) => {
+    setSearchParams(
+      (prev) => {
+        if (value === "ALL") prev.delete("status");
+        else prev.set("status", value);
+        return prev;
+      },
+      { replace: true }
+    );
+  };
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -194,11 +218,14 @@ export function TicketsPage() {
   const isFiltered = statusFilter !== "ALL" || categoryFilter !== "ALL" || assigneeFilter !== "ALL" || searchQuery;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background md:pl-60">
       <Navbar />
       <div className="max-w-5xl mx-auto p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Tickets</h1>
+        <div className="flex items-baseline justify-between mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tickets</h1>
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {totalCount} total
+          </p>
         </div>
 
         {error && (
@@ -208,20 +235,20 @@ export function TicketsPage() {
         )}
 
         {/* Filters Toolbar */}
-        <div className="bg-white rounded-xl border border-gray-200/80 shadow-xs p-4 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="bg-card rounded-xl border border-border shadow-xs p-4 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search subject, body or sender..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 h-9 text-sm rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-gray-400"
+              className="w-full pl-9 pr-8 py-2 h-9 text-sm rounded-lg border border-border bg-background hover:bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/70"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Clear search"
               >
                 <X className="h-4 w-4" />
@@ -236,7 +263,7 @@ export function TicketsPage() {
                 aria-label="Filter by Status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-1.5 h-9 text-sm rounded-lg border border-gray-200 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                className="w-full px-3 py-1.5 h-9 text-sm rounded-lg border border-border bg-card hover:border-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="OPEN">Open</option>
@@ -251,7 +278,7 @@ export function TicketsPage() {
                 aria-label="Filter by Category"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-1.5 h-9 text-sm rounded-lg border border-gray-200 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                className="w-full px-3 py-1.5 h-9 text-sm rounded-lg border border-border bg-card hover:border-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
               >
                 <option value="ALL">All Categories</option>
                 <option value="GENERAL_QUESTION">General</option>
@@ -267,7 +294,7 @@ export function TicketsPage() {
                 aria-label="Filter by Assignee"
                 value={assigneeFilter}
                 onChange={(e) => setAssigneeFilter(e.target.value)}
-                className="w-full px-3 py-1.5 h-9 text-sm rounded-lg border border-gray-200 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                className="w-full px-3 py-1.5 h-9 text-sm rounded-lg border border-border bg-card hover:border-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
               >
                 <option value="ALL">All Assignees</option>
                 <option value="UNASSIGNED">Unassigned</option>
@@ -288,7 +315,7 @@ export function TicketsPage() {
                   setAssigneeFilter("ALL");
                   setSearchQuery("");
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 h-9 text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all cursor-pointer border border-transparent hover:border-gray-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 h-9 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer border border-transparent hover:border-border"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Reset
@@ -310,16 +337,16 @@ export function TicketsPage() {
               </colgroup>
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="border-b text-left text-gray-500">
+                  <tr key={headerGroup.id} className="border-b border-border text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {headerGroup.headers.map((header) => {
                       const canSort = header.column.getCanSort();
                       const sorted = header.column.getIsSorted();
                       return (
-                        <th key={header.id} className="px-4 py-3 font-medium">
+                        <th key={header.id} className="px-4 py-2.5 font-medium">
                           {canSort ? (
                             <button
                               onClick={header.column.getToggleSortingHandler()}
-                              className="inline-flex items-center gap-1 hover:text-gray-800 transition-colors"
+                              className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
                             >
                               {flexRender(header.column.columnDef.header, header.getContext())}
                               {sorted === "asc" ? (
@@ -342,7 +369,7 @@ export function TicketsPage() {
               <tbody>
                 {isPending &&
                   Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="border-b last:border-0">
+                    <tr key={i} className="border-b border-border last:border-0">
                       <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-4 w-36" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded-full" /></td>
@@ -354,7 +381,7 @@ export function TicketsPage() {
 
                 {!isPending && tickets?.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
+                    <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                       {isFiltered ? "No tickets match the selected filters." : "No tickets yet."}
                     </td>
                   </tr>
@@ -362,7 +389,7 @@ export function TicketsPage() {
 
                 {!isPending &&
                   table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="border-b last:border-0 hover:bg-gray-50/50">
+                    <tr key={row.id} className={`border-b border-border last:border-0 border-l-2 hover:bg-muted/40 transition-colors ${ROW_ACCENT[row.original.status]}`}>
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="px-4 py-3">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -374,41 +401,41 @@ export function TicketsPage() {
             </table>
           </CardContent>
           {!isPending && ticketsData && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white rounded-b-xl">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-card rounded-b-xl">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
+                  className="relative inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg text-foreground bg-card hover:bg-muted/50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg text-foreground bg-card hover:bg-muted/50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
                 >
                   Next
                 </button>
               </div>
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground tabular-nums">
                     Showing{" "}
-                    <span className="font-semibold text-gray-800">
+                    <span className="font-semibold text-foreground">
                       {totalCount === 0 ? 0 : (page - 1) * pageSize + 1}
                     </span>{" "}
                     to{" "}
-                    <span className="font-semibold text-gray-800">
+                    <span className="font-semibold text-foreground">
                       {Math.min(page * pageSize, totalCount)}
                     </span>{" "}
-                    of <span className="font-semibold text-gray-800">{totalCount}</span> results
+                    of <span className="font-semibold text-foreground">{totalCount}</span> results
                   </p>
                 </div>
                 <div className="flex items-center gap-6">
                   {/* Page Size Selector */}
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Rows per page</span>
+                    <span className="text-sm text-muted-foreground">Rows per page</span>
                     <select
                       aria-label="Rows per page"
                       value={pageSize}
@@ -416,7 +443,7 @@ export function TicketsPage() {
                         setPageSize(Number(e.target.value));
                         setPage(1);
                       }}
-                      className="px-2 py-1 text-xs font-medium rounded-md border border-gray-200 bg-white text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition-all"
+                      className="px-2 py-1 text-xs font-medium rounded-md border border-border bg-card text-foreground hover:border-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition-all"
                     >
                       <option value={5}>5</option>
                       <option value={10}>10</option>
@@ -429,7 +456,7 @@ export function TicketsPage() {
                     <button
                       onClick={() => setPage(1)}
                       disabled={page === 1}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
                       aria-label="First page"
                     >
                       <ChevronsLeft className="h-4 w-4" />
@@ -437,7 +464,7 @@ export function TicketsPage() {
                     <button
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
                       aria-label="Previous page"
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -459,8 +486,8 @@ export function TicketsPage() {
                               aria-current={page === pageNum ? "page" : undefined}
                               className={`inline-flex items-center justify-center w-8 h-8 text-sm font-semibold rounded-lg transition-all select-none cursor-pointer focus:outline-none ${
                                 page === pageNum
-                                  ? "bg-gray-900 text-white shadow-xs"
-                                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                  ? "bg-primary text-primary-foreground shadow-xs"
+                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
                               }`}
                             >
                               {pageNum}
@@ -471,7 +498,7 @@ export function TicketsPage() {
                           return (
                             <span
                               key={`ellipsis-${pageNum}`}
-                              className="inline-flex items-center justify-center w-8 h-8 text-sm font-medium text-gray-400 select-none"
+                              className="inline-flex items-center justify-center w-8 h-8 text-sm font-medium text-muted-foreground/60 select-none"
                             >
                               ...
                             </span>
@@ -484,7 +511,7 @@ export function TicketsPage() {
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={page === totalPages}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
                       aria-label="Next page"
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -492,7 +519,7 @@ export function TicketsPage() {
                     <button
                       onClick={() => setPage(totalPages)}
                       disabled={page === totalPages}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed select-none cursor-pointer transition-all focus:outline-none"
                       aria-label="Last page"
                     >
                       <ChevronsRight className="h-4 w-4" />

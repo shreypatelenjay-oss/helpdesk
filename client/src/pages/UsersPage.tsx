@@ -71,11 +71,11 @@ export function UsersPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background md:pl-60">
       <Navbar />
       <div className="max-w-4xl mx-auto p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Users</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Users</h1>
           <Button onClick={() => { createUser.reset(); setModalOpen(true); }}>Add user</Button>
         </div>
 
@@ -125,7 +125,7 @@ export function UsersPage() {
             <CardContent className="p-0">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-gray-500">
+                  <tr className="border-b text-left text-muted-foreground">
                     <th className="px-4 py-3 font-medium">Name</th>
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Role</th>
@@ -152,7 +152,7 @@ export function UsersPage() {
             <CardContent className="p-0">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-gray-500">
+                  <tr className="border-b text-left text-muted-foreground">
                     <th className="px-4 py-3 font-medium">Name</th>
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Role</th>
@@ -163,27 +163,27 @@ export function UsersPage() {
                 <tbody>
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
+                      <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground/60">
                         No users yet.
                       </td>
                     </tr>
                   )}
                   {users.map((user) => (
-                    <tr key={user.id} className="border-b last:border-0 hover:bg-gray-50/50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{user.name ?? "—"}</td>
-                      <td className="px-4 py-3 text-gray-600">{user.email}</td>
+                    <tr key={user.id} className="border-b last:border-0 hover:bg-muted/40">
+                      <td className="px-4 py-3 font-medium text-foreground">{user.name ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                             user.role === Role.ADMIN
-                              ? "bg-violet-100 text-violet-700"
-                              : "bg-gray-100 text-gray-600"
+                              ? "bg-accent text-accent-foreground"
+                              : "bg-muted text-muted-foreground"
                           }`}
                         >
                           {user.role === Role.ADMIN ? "Admin" : "Agent"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 w-20">

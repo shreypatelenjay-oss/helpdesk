@@ -48,7 +48,11 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-background">
+      <div className="flex items-center gap-2">
+        <span className="grid size-8 place-items-center rounded-md bg-primary text-sm font-bold text-primary-foreground">◆</span>
+        <span className="text-lg font-semibold tracking-tight text-foreground">Helpdesk</span>
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
