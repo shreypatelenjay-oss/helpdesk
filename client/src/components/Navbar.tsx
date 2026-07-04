@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
-import { Inbox, LayoutDashboard, LogOut, Users } from "lucide-react";
+import { Inbox, LayoutDashboard, LogOut, Moon, Sun, Users } from "lucide-react";
 import { Role } from "@repo/core";
 import { authClient } from "../lib/auth-client";
+import { useTheme } from "../lib/theme-provider";
 
 type NavItemProps = {
   to: string;
@@ -52,6 +53,7 @@ export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: counts } = useStatusCounts();
+  const { theme, toggleTheme } = useTheme();
 
   const isAdmin = (session?.user as any)?.role === Role.ADMIN;
   const onTickets = location.pathname === "/tickets";
@@ -112,12 +114,25 @@ export function Navbar() {
           <p className="truncate text-sm text-sidebar-primary">
             {session?.user?.name ?? session?.user?.email}
           </p>
-          <button
-            onClick={handleSignOut}
-            className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
-          >
-            <LogOut className="size-3.5" /> Sign out
-          </button>
+          <div className="mt-1.5 flex items-center gap-3">
+            <button
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 text-xs text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
+            >
+              <LogOut className="size-3.5" /> Sign out
+            </button>
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle dark mode"
+              className="inline-flex items-center gap-1.5 text-xs text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
+            >
+              {theme === "dark" ? (
+                <Sun className="size-3.5" />
+              ) : (
+                <Moon className="size-3.5" />
+              )}
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -138,6 +153,17 @@ export function Navbar() {
               Users
             </Link>
           )}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+            className="text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
+          >
+            {theme === "dark" ? (
+              <Sun className="size-4" />
+            ) : (
+              <Moon className="size-4" />
+            )}
+          </button>
           <button
             onClick={handleSignOut}
             aria-label="Sign out"
