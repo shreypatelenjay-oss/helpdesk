@@ -59,8 +59,11 @@ export function Navbar() {
   const onTickets = location.pathname === "/tickets";
 
   const handleSignOut = async () => {
-    await authClient.signOut();
-    navigate("/login", { replace: true });
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => navigate("/login", { replace: true }),
+      },
+    });
   };
 
   const items = (
@@ -96,63 +99,15 @@ export function Navbar() {
     <>
       {/* Desktop sidebar */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 z-20 w-60 flex-col bg-sidebar border-r border-sidebar-border">
-        <Link
-          to="/"
-          className="flex items-center gap-2 px-5 pt-6 pb-5 hover:no-underline"
-        >
-          <span className="grid size-7 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-            ◆
-          </span>
-          <span className="text-[15px] font-semibold tracking-tight text-sidebar-primary">
-            Helpdesk
-          </span>
-        </Link>
-        <nav className="flex-1 space-y-0.5 px-2.5" aria-label="Main">
-          {items}
-        </nav>
-        <div className="border-t border-sidebar-border px-4 py-4">
-          <p className="truncate text-sm text-sidebar-primary">
-            {session?.user?.name ?? session?.user?.email}
-          </p>
-          <div className="mt-1.5 flex items-center gap-3">
-            <button
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 text-xs text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
-            >
-              <LogOut className="size-3.5" /> Sign out
-            </button>
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle dark mode"
-              className="inline-flex items-center gap-1.5 text-xs text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
-            >
-              {theme === "dark" ? (
-                <Sun className="size-3.5" />
-              ) : (
-                <Moon className="size-3.5" />
-              )}
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile top bar */}
-      <nav className="md:hidden flex items-center justify-between gap-3 bg-sidebar px-4 py-3">
-        <Link to="/" className="flex items-center gap-2 hover:no-underline">
-          <span className="grid size-6 place-items-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">
-            ◆
-          </span>
-          <span className="text-sm font-semibold text-sidebar-primary">Helpdesk</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/tickets" className="text-sm text-sidebar-foreground hover:text-sidebar-accent-foreground hover:no-underline">
-            Tickets
+        <div className="flex items-center justify-between gap-2 px-5 pt-6 pb-5">
+          <Link to="/" className="flex items-center gap-2 hover:no-underline">
+            <span className="grid size-7 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+              ◆
+            </span>
+            <span className="text-[15px] font-semibold tracking-tight text-sidebar-primary">
+              Helpdesk
+            </span>
           </Link>
-          {isAdmin && (
-            <Link to="/users" className="text-sm text-sidebar-foreground hover:text-sidebar-accent-foreground hover:no-underline">
-              Users
-            </Link>
-          )}
           <button
             onClick={toggleTheme}
             aria-label="Toggle dark mode"
@@ -164,6 +119,53 @@ export function Navbar() {
               <Moon className="size-4" />
             )}
           </button>
+        </div>
+        <nav className="flex-1 space-y-0.5 px-2.5" aria-label="Main">
+          {items}
+        </nav>
+        <div className="border-t border-sidebar-border px-4 py-4">
+          <p className="truncate text-sm text-sidebar-primary">
+            {session?.user?.name ?? session?.user?.email}
+          </p>
+          <button
+            onClick={handleSignOut}
+            className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
+          >
+            <LogOut className="size-3.5" /> Sign out
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile top bar */}
+      <nav className="md:hidden flex items-center justify-between gap-3 bg-sidebar px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 hover:no-underline">
+            <span className="grid size-6 place-items-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">
+              ◆
+            </span>
+            <span className="text-sm font-semibold text-sidebar-primary">Helpdesk</span>
+          </Link>
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+            className="text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
+          >
+            {theme === "dark" ? (
+              <Sun className="size-4" />
+            ) : (
+              <Moon className="size-4" />
+            )}
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          <Link to="/tickets" className="text-sm text-sidebar-foreground hover:text-sidebar-accent-foreground hover:no-underline">
+            Tickets
+          </Link>
+          {isAdmin && (
+            <Link to="/users" className="text-sm text-sidebar-foreground hover:text-sidebar-accent-foreground hover:no-underline">
+              Users
+            </Link>
+          )}
           <button
             onClick={handleSignOut}
             aria-label="Sign out"

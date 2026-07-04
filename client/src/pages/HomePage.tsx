@@ -45,15 +45,26 @@ interface StatCardProps {
   label: string;
   value: string;
   icon: React.ReactNode;
+  accent: string;
 }
 
-function StatCard({ label, value, icon }: StatCardProps) {
+function StatCard({ label, value, icon, accent }: StatCardProps) {
   return (
-    <Card>
+    <Card className="transition-shadow hover:shadow-md">
       <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-muted-foreground">{label}</span>
-          <span className="text-muted-foreground/70">{icon}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </span>
+          <span
+            className="grid size-8 shrink-0 place-items-center rounded-lg"
+            style={{
+              backgroundColor: `color-mix(in srgb, ${accent} 15%, transparent)`,
+              color: accent,
+            }}
+          >
+            {icon}
+          </span>
         </div>
         <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">{value}</p>
       </CardContent>
@@ -65,9 +76,9 @@ function StatCardSkeleton() {
   return (
     <Card>
       <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-2">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-5 w-5 rounded" />
+        <div className="flex items-center justify-between mb-3">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="size-8 rounded-lg" />
         </div>
         <Skeleton className="h-9 w-20 mt-1" />
       </CardContent>
@@ -105,22 +116,26 @@ export function HomePage() {
               <StatCard
                 label="Total Tickets"
                 value={statsQuery.data.totalTickets.toString()}
-                icon={<Tickets className="h-5 w-5" />}
+                icon={<Tickets className="h-4 w-4" />}
+                accent="var(--chart-1)"
               />
               <StatCard
                 label="Open Tickets"
                 value={statsQuery.data.openTickets.toString()}
-                icon={<Inbox className="h-5 w-5" />}
+                icon={<Inbox className="h-4 w-4" />}
+                accent="var(--chart-2)"
               />
               <StatCard
                 label="Resolved by AI"
                 value={statsQuery.data.aiResolvedTickets.toString()}
-                icon={<Bot className="h-5 w-5" />}
+                icon={<Bot className="h-4 w-4" />}
+                accent="var(--chart-3)"
               />
               <StatCard
                 label="AI Resolution Rate"
                 value={`${statsQuery.data.aiResolvedPercent}%`}
-                icon={<TicketCheck className="h-5 w-5" />}
+                icon={<TicketCheck className="h-4 w-4" />}
+                accent="var(--chart-4)"
               />
               <StatCard
                 label="Avg Resolution Time"
@@ -129,7 +144,8 @@ export function HomePage() {
                     ? formatDuration(statsQuery.data.avgResolutionMs)
                     : "—"
                 }
-                icon={<Clock className="h-5 w-5" />}
+                icon={<Clock className="h-4 w-4" />}
+                accent="var(--chart-1)"
               />
             </>
           ) : null}
@@ -149,29 +165,33 @@ export function HomePage() {
             ) : (
               <ResponsiveContainer width="100%" height={224}>
                 <BarChart data={chartQuery.data} barSize={14}>
-                  <CartesianGrid vertical={false} stroke="#e4e7ed" />
+                  <CartesianGrid vertical={false} stroke="var(--border)" />
                   <XAxis
                     dataKey="date"
                     tickFormatter={formatChartDate}
-                    tick={{ fontSize: 11, fill: "#9ca3af" }}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                     axisLine={false}
                     tickLine={false}
                     interval={4}
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fontSize: 11, fill: "#9ca3af" }}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                     axisLine={false}
                     tickLine={false}
                     width={28}
                   />
                   <Tooltip
-                    cursor={{ fill: "#edeff4" }}
+                    cursor={{ fill: "var(--muted)" }}
                     contentStyle={{
                       fontSize: 12,
                       borderRadius: 6,
-                      border: "1px solid #e5e7eb",
+                      background: "var(--popover)",
+                      border: "1px solid var(--border)",
+                      color: "var(--popover-foreground)",
                     }}
+                    labelStyle={{ color: "var(--popover-foreground)" }}
+                    itemStyle={{ color: "var(--popover-foreground)" }}
                     formatter={(value) => [value, "Tickets"]}
                     labelFormatter={(label) => {
                       if (typeof label !== "string") return String(label);
@@ -182,7 +202,7 @@ export function HomePage() {
                       );
                     }}
                   />
-                  <Bar dataKey="count" fill="#3b4a8c" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="count" fill="var(--primary)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
