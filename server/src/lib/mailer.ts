@@ -2,6 +2,9 @@ import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
+  // Railway's container network lacks outbound IPv6 routing, so connecting to
+  // smtp.gmail.com's IPv6 (AAAA) address times out — force IPv4.
+  family: 4,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD,
