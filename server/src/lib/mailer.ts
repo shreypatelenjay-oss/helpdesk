@@ -1,17 +1,7 @@
-import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  // Railway's container network lacks outbound IPv6 routing, so connecting to
-  // smtp.gmail.com's IPv6 (AAAA) address times out — force IPv4.
-  family: 4,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
-
-export default transporter;
+// Railway's network blocks outbound SMTP ports (465/587) entirely, so direct
+// SMTP send (nodemailer) times out — send outbound mail over HTTPS via Resend instead.
+// Inbound mail still comes in over IMAP (imapPoll.ts), which uses port 993 and is unaffected.
+const RESEND_API_URL = "https://api.resend.com/emails";
 
 // Gmail plus-addressing: mail sent to "local+ticket-<id>@domain" still lands in the
 // same inbox, so replying to this address lets inbound polling thread the reply back
@@ -38,15 +28,26 @@ export async function sendReplyEmail({
 }) {
   const finalSubject = subject.trim().toLowerCase().startsWith("re:") ? subject : `Re: ${subject}`;
 
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
-    to,
-    replyTo: ticketId ? ticketReplyToAddress(ticketId) : undefined,
-    subject: finalSubject,
-    text,
-    html,
-    // Marks mail sent by the app so Sent-folder polling can skip it — it's already recorded
-    // as a Reply row when it was sent, so re-syncing it would create a duplicate.
-    headers: { "X-Helpdesk-App-Reply": "1" },
+  const res = await fetch(RESEND_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM_EMAIL,
+      to,
+      reply_to: ticketId ? ticketReplyToAddress(ticketId) : undefined,
+      subject: finalSubject,
+      text,
+      html,
+      // Marks mail sent by the app so Sent-folder polling can skip it — it's already recorded
+      // as a Reply row when it was sent, so re-syncing it would create a duplicate.
+      headers: { "X-Helpdesk-App-Reply": "1" },
+    }),
   });
+
+  if (!res.ok) {
+    throw new Error(`Resend send failed: ${res.status} ${await res.text()}`);
+  }
 }
